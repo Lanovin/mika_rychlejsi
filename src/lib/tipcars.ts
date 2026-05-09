@@ -7,6 +7,11 @@ const TIPCARS_URL =
   "http://export.tipcars.com/inzerce_xml.php?R=ste26244a&F=2529&T=N&Z=N&V=N";
 
 const PHOTO_ZDROJOVE = "https://img.tipcars.com/fotky_zdrojove/";
+const isVercelDeployment = process.env.VERCEL === "1" || Boolean(process.env.VERCEL_ENV);
+const configuredTimeout = Number.parseInt(process.env.TIPCARS_TIMEOUT_MS ?? "", 10);
+const TIPCARS_TIMEOUT_MS = Number.isFinite(configuredTimeout) && configuredTimeout > 0
+  ? configuredTimeout
+  : (isVercelDeployment ? 4500 : 15000);
 
 function photoUrl(nazev: string): string {
   // nazev = "14544030_1.jpg" → need "fotky_zdrojove/14544030_1/0/x/x.jpg"
@@ -248,7 +253,7 @@ export async function fetchTipcarsVehicles(): Promise<Vehicle[]> {
 
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 15000);
+    const timeout = setTimeout(() => controller.abort(), TIPCARS_TIMEOUT_MS);
 
     const res = await fetch(TIPCARS_URL, {
       next: { revalidate: 300 },

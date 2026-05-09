@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Phone, Clock, ChevronDown, Home, X } from "lucide-react";
+import { Phone, Clock, ChevronDown, Home, X, AlertTriangle } from "lucide-react";
 import { usePathname } from "next/navigation";
 import czFlag from "@/cz.png";
 import gbFlag from "@/gb.png";
@@ -131,8 +131,10 @@ export function HeaderClient({ alert, kontaktCs, kontaktEn }: HeaderClientProps)
   const { lang, toggleLang } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const [sluzbyOpen, setSluzbyOpen] = useState(false);
+  const [desktopSluzbyPinned, setDesktopSluzbyPinned] = useState(false);
   const [mobileSluzbyOpen, setMobileSluzbyOpen] = useState(false);
   const sluzbyTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const desktopSluzbyRef = useRef<HTMLDivElement | null>(null);
   const [headerVisible, setHeaderVisible] = useState(true);
   const lastScrollY = useRef(0);
 
@@ -145,20 +147,64 @@ export function HeaderClient({ alert, kontaktCs, kontaktEn }: HeaderClientProps)
   const leftNav = getLeftNav(lang);
   const rightNav = getRightNav(lang);
   const sluzbySubmenu = getSluzbySubmenu(lang);
+  const isServicesPath = pathname === "/sluzby" || pathname.startsWith("/sluzby/");
 
-  const closeMenu = () => { setIsOpen(false); setMobileSluzbyOpen(false); };
+  const dismissSluzby = () => {
+    if (sluzbyTimeout.current) {
+      clearTimeout(sluzbyTimeout.current);
+      sluzbyTimeout.current = null;
+    }
+    setDesktopSluzbyPinned(false);
+    setSluzbyOpen(false);
+  };
+
+  const closeMenu = () => {
+    setIsOpen(false);
+    setMobileSluzbyOpen(false);
+    dismissSluzby();
+  };
 
   const openSluzby = () => {
     if (sluzbyTimeout.current) clearTimeout(sluzbyTimeout.current);
     setSluzbyOpen(true);
   };
   const closeSluzby = () => {
+    if (desktopSluzbyPinned) return;
     sluzbyTimeout.current = setTimeout(() => setSluzbyOpen(false), 150);
+  };
+  const toggleDesktopSluzby = () => {
+    if (sluzbyTimeout.current) clearTimeout(sluzbyTimeout.current);
+    setDesktopSluzbyPinned((prev) => {
+      const next = !prev;
+      setSluzbyOpen(next);
+      return next;
+    });
   };
 
   useEffect(() => {
     return () => { if (sluzbyTimeout.current) clearTimeout(sluzbyTimeout.current); };
   }, []);
+
+  useEffect(() => {
+    setIsOpen(false);
+    setMobileSluzbyOpen(false);
+    setDesktopSluzbyPinned(false);
+    setSluzbyOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!desktopSluzbyPinned) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!desktopSluzbyRef.current?.contains(event.target as Node)) {
+        setDesktopSluzbyPinned(false);
+        setSluzbyOpen(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [desktopSluzbyPinned]);
 
   useEffect(() => {
     const onScroll = () => {
@@ -221,22 +267,50 @@ export function HeaderClient({ alert, kontaktCs, kontaktEn }: HeaderClientProps)
         <nav style={{ display: 'none', alignItems: 'center', gap: '36px', fontFamily: "var(--font-body)", fontSize: '16px', fontWeight: 500, letterSpacing: '0.16em', textTransform: 'uppercase' as const, flex: 1, justifyContent: 'flex-end', paddingRight: '180px' }} className="lg:!flex">
           {leftNav.map((item) => {
             if (item.hasSubmenu) {
-              const isActive = pathname.startsWith('/sluzby/');
+              const isActive = isServicesPath;
               return (
                 <div
                   key={item.href}
+                  ref={desktopSluzbyRef}
                   style={{ position: 'relative' }}
                   onMouseEnter={openSluzby}
                   onMouseLeave={closeSluzby}
                 >
-                  <span
-                    style={{ whiteSpace: 'nowrap', color: isActive || sluzbyOpen ? 'var(--gold)' : 'var(--cream-muted)', transition: 'color 0.2s ease', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}
-                    onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--gold)')}
-                    onMouseLeave={(e) => (e.currentTarget.style.color = isActive || sluzbyOpen ? 'var(--gold)' : 'var(--cream-muted)')}
-                  >
-                    {item.label}
-                    <ChevronDown style={{ width: '14px', height: '14px', transition: 'transform 0.2s', transform: sluzbyOpen ? 'rotate(180deg)' : 'rotate(0)' }} />
-                  </span>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                    <Link
+                      href={item.href}
+                      onClick={dismissSluzby}
+                      style={{
+                        whiteSpace: 'nowrap',
+                        color: isActive || sluzbyOpen ? 'var(--gold)' : 'var(--cream-muted)',
+                        transition: 'color 0.2s ease',
+                        textDecoration: 'none',
+                        display: 'inline-flex',
+                        alignItems: 'center'
+                      }}
+                    >
+                      {item.label}
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={toggleDesktopSluzby}
+                      aria-label={lang === 'cs' ? 'Rozbalit služby' : 'Open services menu'}
+                      aria-expanded={sluzbyOpen}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: 0,
+                        border: 'none',
+                        background: 'transparent',
+                        color: isActive || sluzbyOpen ? 'var(--gold)' : 'var(--cream-muted)',
+                        cursor: 'pointer',
+                        transition: 'color 0.2s ease'
+                      }}
+                    >
+                      <ChevronDown style={{ width: '14px', height: '14px', transition: 'transform 0.2s', transform: sluzbyOpen ? 'rotate(180deg)' : 'rotate(0)' }} />
+                    </button>
+                  </div>
                   {sluzbyOpen && (
                     <div style={{
                       position: 'absolute',
@@ -257,7 +331,7 @@ export function HeaderClient({ alert, kontaktCs, kontaktEn }: HeaderClientProps)
                           <Link
                             key={sub.href}
                             href={sub.href}
-                            onClick={() => setSluzbyOpen(false)}
+                            onClick={dismissSluzby}
                             style={{
                               display: 'block',
                               padding: '8px 20px',
@@ -413,31 +487,43 @@ export function HeaderClient({ alert, kontaktCs, kontaktEn }: HeaderClientProps)
                 if ('hasSubmenu' in item && item.hasSubmenu) {
                   return (
                     <div key={item.href}>
-                      <button
-                        type="button"
-                        onClick={() => setMobileSluzbyOpen((v) => !v)}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          width: '100%',
-                          padding: '8px 12px',
-                          color: pathname.startsWith('/sluzby/') ? 'var(--gold)' : 'var(--cream-muted)',
-                          fontWeight: pathname.startsWith('/sluzby/') ? 600 : 400,
-                          textDecoration: 'none',
-                          transition: 'color 0.2s',
-                          background: 'none',
-                          border: 'none',
-                          cursor: 'pointer',
-                          fontSize: 'inherit',
-                          fontFamily: 'inherit',
-                          letterSpacing: 'inherit',
-                          textAlign: 'left'
-                        }}
-                      >
-                        {item.label}
-                        <ChevronDown style={{ width: '16px', height: '16px', transition: 'transform 0.2s', transform: mobileSluzbyOpen ? 'rotate(180deg)' : 'rotate(0)' }} />
-                      </button>
+                      <div style={{ display: 'flex', alignItems: 'stretch' }}>
+                        <Link
+                          href={item.href}
+                          onClick={closeMenu}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            flex: 1,
+                            padding: '8px 12px',
+                            color: isServicesPath ? 'var(--gold)' : 'var(--cream-muted)',
+                            fontWeight: isServicesPath ? 600 : 400,
+                            textDecoration: 'none',
+                            transition: 'color 0.2s'
+                          }}
+                        >
+                          {item.label}
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => setMobileSluzbyOpen((value) => !value)}
+                          aria-label={lang === 'cs' ? 'Rozbalit služby' : 'Open services menu'}
+                          aria-expanded={mobileSluzbyOpen}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: '44px',
+                            color: isServicesPath || mobileSluzbyOpen ? 'var(--gold)' : 'var(--cream-muted)',
+                            transition: 'color 0.2s',
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          <ChevronDown style={{ width: '16px', height: '16px', transition: 'transform 0.2s', transform: mobileSluzbyOpen ? 'rotate(180deg)' : 'rotate(0)' }} />
+                        </button>
+                      </div>
                       {mobileSluzbyOpen && (
                         <div style={{ paddingLeft: '12px', borderLeft: '2px solid var(--gold-dim)' }}>
                           {sluzbySubmenu.map((sub) => (
@@ -506,57 +592,30 @@ export function HeaderClient({ alert, kontaktCs, kontaktEn }: HeaderClientProps)
         position: 'sticky',
         top: headerVisible ? (kontakt ? '168px' : '124px') : '-48px',
         zIndex: 29,
-        background: 'linear-gradient(90deg, #c9a84c 0%, #e2c97e 50%, #c9a84c 100%)',
-        color: '#0e0e0e',
-        fontSize: '15px',
-        fontWeight: 700,
-        padding: '11px 52px 11px 0',
-        lineHeight: 1.45,
-        letterSpacing: '0.02em',
-        fontFamily: 'var(--font-body)',
+        background: 'linear-gradient(90deg, #d5b65c 0%, #f1e0ae 48%, #d8ba62 100%)',
         borderBottom: '1px solid rgba(0,0,0,0.12)',
         boxShadow: '0 12px 24px rgba(0,0,0,0.12)',
         transition: 'top 0.35s ease',
-        overflow: 'hidden',
       }}>
-        <div className="alert-marquee-viewport" aria-label={alertText}>
-          <div className="alert-marquee-track">
-            {[0, 1, 2].map((copyIndex) => (
-              <div key={copyIndex} className="alert-marquee-copy" aria-hidden={copyIndex > 0}>
-                <span className="alert-marquee-item">
-                  <span className="alert-marquee-icon">⚠</span>
-                  <span>{alertText}</span>
-                </span>
-              </div>
-            ))}
+        <div className="container-page">
+          <div className="alert-banner" aria-label={alertText}>
+            <div className="alert-banner-copy">
+              <span className="alert-banner-badge">{lang === 'cs' ? 'Aktuálně' : 'Update'}</span>
+              <span className="alert-banner-icon" aria-hidden="true">
+                <AlertTriangle style={{ width: '15px', height: '15px' }} />
+              </span>
+              <span className="alert-banner-text">{alertText}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setAlertDismissed(true)}
+              aria-label={lang === 'cs' ? 'Zavřít upozornění' : 'Close alert'}
+              className="alert-banner-close"
+            >
+              <X style={{ width: '15px', height: '15px' }} />
+            </button>
           </div>
         </div>
-        <button
-          type="button"
-          onClick={() => setAlertDismissed(true)}
-          aria-label="Zavřít"
-          style={{
-            position: 'absolute',
-            right: '16px',
-            top: '50%',
-            transform: 'translateY(-50%)',
-            background: 'rgba(0,0,0,0.12)',
-            border: 'none',
-            borderRadius: '50%',
-            cursor: 'pointer',
-            color: '#2d220f',
-            width: '28px',
-            height: '28px',
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            transition: 'background 0.15s',
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(0,0,0,0.18)'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(0,0,0,0.12)'; }}
-        >
-          <X style={{ width: '15px', height: '15px' }} />
-        </button>
       </div>
     )}
     </>

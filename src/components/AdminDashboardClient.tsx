@@ -40,6 +40,10 @@ export function AdminDashboardClient({
   const translatedNotice = notice
     ? notice === "__UPDATED__"
       ? t("admin.noticeUpdated", lang)
+      : notice === "__LOAD_FAILED__"
+        ? (lang === "cs"
+          ? "Dashboard se načetl v omezeném režimu. Aktuální data z Tipcars teď nejsou dostupná."
+          : "The dashboard loaded in limited mode. Live Tipcars data is currently unavailable.")
       : notice
     : null;
 
@@ -74,8 +78,14 @@ export function AdminDashboardClient({
 
       {translatedNotice ? (
         <div
-          className="mt-6 border-l-4 border-emerald-500/60 px-4 py-3 text-sm text-emerald-200"
-          style={{ background: "var(--black-rich)" }}
+          className="mt-6 px-4 py-3 text-sm"
+          style={{
+            background: "var(--black-rich)",
+            borderLeft: notice === "__LOAD_FAILED__"
+              ? "4px solid rgba(201,168,76,0.75)"
+              : "4px solid rgba(16,185,129,0.6)",
+            color: notice === "__LOAD_FAILED__" ? "var(--gold-light)" : "#bbf7d0",
+          }}
         >
           {translatedNotice}
         </div>

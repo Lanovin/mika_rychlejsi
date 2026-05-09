@@ -22,10 +22,25 @@ function getNoticeSentinel(searchParams?: AdminDashboardProps["searchParams"]) {
   return null;
 }
 
+async function getAdminVehicles() {
+  try {
+    return {
+      vehicles: await readVehicles(),
+      notice: null,
+    };
+  } catch (error) {
+    console.error("[admin] Failed to load vehicles for dashboard.", error);
+    return {
+      vehicles: [],
+      notice: "__LOAD_FAILED__",
+    };
+  }
+}
+
 export default async function AdminDashboard({ searchParams }: AdminDashboardProps) {
   await requireAdminAuth();
-  const vehicles = await readVehicles();
-  const notice = getNoticeSentinel(searchParams);
+  const { vehicles, notice: loadNotice } = await getAdminVehicles();
+  const notice = loadNotice ?? getNoticeSentinel(searchParams);
 
   const vehicleRows = vehicles.map((v) => ({
     id: v.id,
