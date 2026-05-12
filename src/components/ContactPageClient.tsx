@@ -26,6 +26,27 @@ export function ContactPageClient({ cs, en }: { cs: ContactData; en: ContactData
   const c = lang === "en" ? en : cs;
   const layout = c._layout;
   const show = (key: string) => !layout || layout.includes(key);
+  const processPanel = show("process") ? (
+    <div
+      className="p-5 reveal-on-scroll reveal-on-scroll--delay-2"
+      style={{
+        background: "var(--black-card)",
+        border: "1px solid var(--black-border)",
+      }}
+    >
+      <h2
+        className="text-sm font-semibold"
+        style={{ color: "var(--cream)" }}
+      >
+        {t("contact.expect", lang)}
+      </h2>
+      <div className="mt-3 space-y-3 text-sm text-secondary">
+        {c.process.map((step: string, i: number) => (
+          <div key={i}>{step}</div>
+        ))}
+      </div>
+    </div>
+  ) : null;
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -235,112 +256,97 @@ export function ContactPageClient({ cs, en }: { cs: ContactData; en: ContactData
           </div>
           )}
 
-          {show("process") && (
-          <div
-            className="p-5"
-            style={{
-              background: "var(--black-card)",
-              border: "1px solid var(--black-border)",
-            }}
-          >
-            <h2
-              className="text-sm font-semibold"
-              style={{ color: "var(--cream)" }}
-            >
-              {t("contact.expect", lang)}
-            </h2>
-            <div className="mt-3 space-y-3 text-sm text-secondary">
-              {c.process.map((step: string, i: number) => (
-                <div key={i}>{step}</div>
-              ))}
-            </div>
-          </div>
-          )}
         </div>
 
         {/* Formulář */}
-        {show("form") && (
-        <>
-        {sent ? (
-          <div className="card-panel p-6 flex flex-col items-center justify-center text-center reveal-on-scroll reveal-on-scroll--delay">
-            <div style={{ fontSize: "48px", marginBottom: "16px" }}>✓</div>
-            <h2 className="text-lg font-semibold" style={{ color: "var(--cream)" }}>
-              {lang === "cs" ? "Zpráva odeslána" : "Message Sent"}
-            </h2>
-            <p className="mt-2 text-sm text-secondary">
-              {lang === "cs" ? "Ozveme se vám co nejdříve." : "We'll get back to you as soon as possible."}
-            </p>
-          </div>
-        ) : (
-        <form className="card-panel p-6 reveal-on-scroll reveal-on-scroll--delay" onSubmit={handleSubmit}>
-          <h2
-            className="text-sm font-semibold"
-            style={{
-              fontFamily: "var(--font-display)",
-              color: "var(--cream)",
-            }}
-          >
-            {c.formTitle}
-          </h2>
-          <p className="mt-1 text-xs text-muted">{c.formNote}</p>
-
-          {error && (
-            <div className="mt-3 border-l-4 border-red-500/60 px-4 py-2 text-sm text-red-200" style={{ background: "var(--black-rich)" }}>
-              {error}
+        {(show("form") || processPanel) && (
+        <div className="space-y-6">
+          {show("form") && (
+          <>
+          {sent ? (
+            <div className="card-panel p-6 flex flex-col items-center justify-center text-center reveal-on-scroll reveal-on-scroll--delay">
+              <div style={{ fontSize: "48px", marginBottom: "16px" }}>✓</div>
+              <h2 className="text-lg font-semibold" style={{ color: "var(--cream)" }}>
+                {lang === "cs" ? "Zpráva odeslána" : "Message Sent"}
+              </h2>
+              <p className="mt-2 text-sm text-secondary">
+                {lang === "cs" ? "Ozveme se vám co nejdříve." : "We'll get back to you as soon as possible."}
+              </p>
             </div>
+          ) : (
+          <form className="card-panel p-6 reveal-on-scroll reveal-on-scroll--delay" onSubmit={handleSubmit}>
+            <h2
+              className="text-sm font-semibold"
+              style={{
+                fontFamily: "var(--font-display)",
+                color: "var(--cream)",
+              }}
+            >
+              {c.formTitle}
+            </h2>
+            <p className="mt-1 text-xs text-muted">{c.formNote}</p>
+
+            {error && (
+              <div className="mt-3 border-l-4 border-red-500/60 px-4 py-2 text-sm text-red-200" style={{ background: "var(--black-rich)" }}>
+                {error}
+              </div>
+            )}
+
+            <div className="mt-4 space-y-4 text-sm">
+              <div>
+                <label className="block text-xs font-medium uppercase tracking-wide text-muted">
+                  {t("contact.name", lang)}
+                </label>
+                <input type="text" name="name" required placeholder={t("contact.namePlaceholder", lang)} />
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="block text-xs font-medium uppercase tracking-wide text-muted">
+                    {t("contact.email", lang)}
+                  </label>
+                  <input
+                    type="email"
+                    name="email"
+                    required
+                    placeholder={t("contact.emailPlaceholder", lang)}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium uppercase tracking-wide text-muted">
+                    {t("contact.phone", lang)}
+                  </label>
+                  <input
+                    type="tel"
+                    name="phone"
+                    placeholder={t("contact.phonePlaceholder", lang)}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium uppercase tracking-wide text-muted">
+                  {t("contact.message", lang)}
+                </label>
+                <textarea
+                  rows={4}
+                  name="message"
+                  required
+                  placeholder={t("contact.messagePlaceholder", lang)}
+                />
+              </div>
+
+              <button type="submit" disabled={sending} className="btn-primary mt-2 w-full">
+                {sending ? (lang === "cs" ? "Odesílám…" : "Sending…") : t("contact.send", lang)}
+              </button>
+            </div>
+          </form>
+          )}
+          </>
           )}
 
-          <div className="mt-4 space-y-4 text-sm">
-            <div>
-              <label className="block text-xs font-medium uppercase tracking-wide text-muted">
-                {t("contact.name", lang)}
-              </label>
-              <input type="text" name="name" required placeholder={t("contact.namePlaceholder", lang)} />
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label className="block text-xs font-medium uppercase tracking-wide text-muted">
-                  {t("contact.email", lang)}
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  required
-                  placeholder={t("contact.emailPlaceholder", lang)}
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium uppercase tracking-wide text-muted">
-                  {t("contact.phone", lang)}
-                </label>
-                <input
-                  type="tel"
-                  name="phone"
-                  placeholder={t("contact.phonePlaceholder", lang)}
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium uppercase tracking-wide text-muted">
-                {t("contact.message", lang)}
-              </label>
-              <textarea
-                rows={4}
-                name="message"
-                required
-                placeholder={t("contact.messagePlaceholder", lang)}
-              />
-            </div>
-
-            <button type="submit" disabled={sending} className="btn-primary mt-2 w-full">
-              {sending ? (lang === "cs" ? "Odesílám…" : "Sending…") : t("contact.send", lang)}
-            </button>
-          </div>
-        </form>
-        )}
-        </>
+          {processPanel}
+        </div>
         )}
       </section>
 

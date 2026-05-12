@@ -2,6 +2,8 @@ import type { MetadataRoute } from "next";
 import { readPublishedVehicles } from "@/src/lib/vehicle-store";
 import { readContent } from "@/src/lib/content-store";
 
+export const dynamic = "force-dynamic";
+
 function slugify(text: string): string {
   return text
     .normalize("NFD")
@@ -22,31 +24,31 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${siteUrl}/o-nas`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.7 },
   ];
 
-  // Vehicle pages
-  let vehiclePages: MetadataRoute.Sitemap = [];
-  try {
-    const vehicles = await readPublishedVehicles();
-    vehiclePages = vehicles.map((v) => ({
+  const [vehiclesResult, contentResult] = await Promise.allSettled([
+    readPublishedVehicles(),
+    readContent(),
+  ]);
+
+  const vehiclePages: MetadataRoute.Sitemap = vehiclesResult.status === "fulfilled"
+    ? vehiclesResult.value.map((v) => ({
       url: `${siteUrl}/vozy/${v.id}`,
       lastModified: new Date(v.updatedAt || v.createdAt),
       changeFrequency: "weekly" as const,
       priority: 0.6,
-    }));
-  } catch { /* ignore */ }
+    }))
+    : [];
 
-  // Service pages
-  let servicePages: MetadataRoute.Sitemap = [];
-  try {
-    const content = await readContent();
-    const sluzby = content.sluzby as { services?: { title: string }[] } | undefined;
-    if (sluzby?.services) {
-      servicePages = sluzby.services.map((s) => ({
-        url: `${siteUrl}/sluzby/${slugify(s.title)}`,
-        changeFrequency: "monthly" as const,
-        priority: 0.6,
-      }));
-    }
-  } catch { /* ignore */ }
+  const sluzby = contentResult.status === "fulfilled"
+    ? contentResult.value.sluzby as { services?: { title: string }[] } | undefined
+    : undefined;
+
+  const servicePages: MetadataRoute.Sitemap = sluzby?.services
+    ? sluzby.services.map((s) => ({
+      url: `${siteUrl}/sluzby/${slugify(s.title)}`,
+      changeFrequency: "monthly" as const,
+      priority: 0.6,
+    }))
+    : [];
 
   return [...staticPages, ...vehiclePages, ...servicePages];
 }
