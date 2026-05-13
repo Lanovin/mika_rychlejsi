@@ -42,7 +42,6 @@ export function HeroSlider({ vehicles }: HeroSliderProps) {
     setCurrent(i);
   }, []);
 
-  // Progress animation + auto-advance
   useEffect(() => {
     if (paused || slides.length <= 1) return;
 
@@ -71,6 +70,12 @@ export function HeroSlider({ vehicles }: HeroSliderProps) {
   if (slides.length === 0) return null;
 
   const car = slides[current];
+  const formattedPrice = lang === "cs"
+    ? `${car.price.toLocaleString("cs-CZ")} Kč`
+    : `CZK ${car.price.toLocaleString("en-US")}`;
+  const vatDeductionText = car.vatDeduction
+    ? tReplace("vehicle.vatDeduction", lang, { price: formattedPrice })
+    : null;
 
   return (
     <div
@@ -79,73 +84,31 @@ export function HeroSlider({ vehicles }: HeroSliderProps) {
       onMouseLeave={() => setPaused(false)}
     >
       <div className="hero-slider__track">
-        {slides.map((car, i) => (
-          (() => {
-            const formattedPrice = lang === "cs"
-              ? `${car.price.toLocaleString("cs-CZ")}\u00a0Kč`
-              : `CZK ${car.price.toLocaleString("en-US")}`;
-            const vatDeductionText = car.vatDeduction
-              ? tReplace("vehicle.vatDeduction", lang, { price: formattedPrice })
-              : null;
-
-            return (
-              <Link
-                key={car.id}
-                href={`/vozy/${car.id}`}
-                className={`hero-slider__slide ${i === current ? "hero-slider__slide--active" : ""}`}
-                style={{ opacity: i === current ? 1 : 0, pointerEvents: i === current ? "auto" : "none" }}
-                aria-hidden={i !== current}
-              >
-                <div className={`hero-slider__img-wrap ${i === current ? "hero-slider__img-wrap--zoom" : ""}`}>
-                  <Image
-                    src={car.imageUrl || "/placeholder-car.jpg"}
-                    alt={car.title}
-                    fill
-                    sizes="(max-width: 768px) 100vw, 50vw"
-                    style={{ objectFit: "cover" }}
-                    priority={i === 0}
-                    unoptimized
-                  />
-                </div>
-
-                {/* Slide counter */}
-                <span className="hero-slider__counter">
-                  {String(i + 1).padStart(2, "0")} / {String(slides.length).padStart(2, "0")}
-                </span>
-
-                {/* Badge */}
-                <span className="hero-slider__badge">{t("slider.badge", lang)}</span>
-
-                {/* Bottom gradient overlay with text */}
-                <div className="hero-slider__info">
-                  <div className="hero-slider__title">
-                    {car.make && car.model ? `${car.make} ${car.model}` : car.title.split(/\s+/).slice(0, 2).join(" ")}
-                  </div>
-                  <div className="hero-slider__meta">
-                    {car.year > 0 && (
-                      <span className="hero-slider__meta-item">
-                        <Calendar style={{ width: "13px", height: "13px" }} />
-                        {car.year}
-                      </span>
-                    )}
-                    {car.mileage > 0 && (
-                      <span className="hero-slider__meta-item">
-                        <Gauge style={{ width: "13px", height: "13px" }} />
-                        {car.mileage.toLocaleString(lang === "cs" ? "cs-CZ" : "en-US")} km
-                      </span>
-                    )}
-                  </div>
-                  <div className="hero-slider__price">{formattedPrice}</div>
-                  {vatDeductionText ? (
-                    <div className="hero-slider__price-note">{vatDeductionText}</div>
-                  ) : null}
-                </div>
-              </Link>
-            );
-          })()
+        {slides.map((slidecar, i) => (
+          <Link
+            key={slidecar.id}
+            href={`/vozy/${slidecar.id}`}
+            className={`hero-slider__slide ${i === current ? "hero-slider__slide--active" : ""}`}
+            style={{ opacity: i === current ? 1 : 0, pointerEvents: i === current ? "auto" : "none" }}
+            aria-hidden={i !== current}
+          >
+            <div className={`hero-slider__img-wrap ${i === current ? "hero-slider__img-wrap--zoom" : ""}`}>
+              <Image
+                src={slidecar.imageUrl || "/placeholder-car.jpg"}
+                alt={slidecar.title}
+                fill
+                sizes="(max-width: 768px) 100vw, 50vw"
+                style={{ objectFit: "cover" }}
+                priority={i === 0}
+              />
+            </div>
+            <span className="hero-slider__counter">
+              {String(i + 1).padStart(2, "0")} / {String(slides.length).padStart(2, "0")}
+            </span>
+            <span className="hero-slider__badge">{t("slider.badge", lang)}</span>
+          </Link>
         ))}
 
-        {/* Navigation arrows */}
         {slides.length > 1 && (
           <>
             <button
@@ -168,7 +131,37 @@ export function HeroSlider({ vehicles }: HeroSliderProps) {
         )}
       </div>
 
-      {/* Progress dots + bar */}
+      {/* Info bar — below the photo */}
+      <Link key={current} href={`/vozy/${car.id}`} className="hero-slider__info">
+        <div className="hero-slider__title">
+          {car.make && car.model ? `${car.make} ${car.model}` : car.title.split(/\s+/).slice(0, 2).join(" ")}
+        </div>
+        <div className="hero-slider__meta">
+          {car.year > 0 && (
+            <span className="hero-slider__meta-item">
+              <Calendar style={{ width: "13px", height: "13px" }} />
+              {car.year}
+            </span>
+          )}
+          {car.year > 0 && car.mileage > 0 && (
+            <span className="hero-slider__meta-sep">|</span>
+          )}
+          {car.mileage > 0 && (
+            <span className="hero-slider__meta-item">
+              <Gauge style={{ width: "13px", height: "13px" }} />
+              {car.mileage.toLocaleString(lang === "cs" ? "cs-CZ" : "en-US")} km
+            </span>
+          )}
+        </div>
+        <div className="hero-slider__price-col">
+          <div className="hero-slider__price">{formattedPrice}</div>
+          {vatDeductionText ? (
+            <div className="hero-slider__price-note">{vatDeductionText}</div>
+          ) : null}
+        </div>
+      </Link>
+
+      {/* Dots + progress */}
       {slides.length > 1 && (
         <div className="hero-slider__footer">
           <div className="hero-slider__dots">

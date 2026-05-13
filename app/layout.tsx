@@ -119,6 +119,8 @@ export default function RootLayout({
   return (
     <html lang="cs">
       <head>
+        <link rel="preconnect" href="https://img.tipcars.com" />
+        <link rel="dns-prefetch" href="https://img.tipcars.com" />
         <link rel="icon" href="/miniatura_mika.png" type="image/png" />
         <script
           type="application/ld+json"

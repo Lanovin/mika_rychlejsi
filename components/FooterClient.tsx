@@ -44,12 +44,6 @@ export function FooterClient({ f, fEn, k, kEn }: FooterClientProps) {
       <div className="container-page" style={{ paddingTop: '64px', paddingBottom: '60px' }}>
         <div className="footer-grid">
           <div className="footer-primary-column">
-            <div>
-              <div className="footer-brand">
-                Mika <span style={{ color: 'var(--gold-light)' }}>Auto</span>
-              </div>
-            </div>
-
             <div className="footer-detail-stack">
               <div>
                 <div className="footer-section-label">{t("footer.address", lang)}</div>
@@ -136,13 +130,6 @@ export function FooterClient({ f, fEn, k, kEn }: FooterClientProps) {
         .footer-secondary-column {
           display: grid;
           gap: 28px;
-        }
-        .footer-brand {
-          font-family: var(--font-display);
-          font-size: clamp(28px, 4vw, 42px);
-          font-weight: 700;
-          color: var(--white);
-          line-height: 1;
         }
         .footer-section-label {
           font-size: 11px;

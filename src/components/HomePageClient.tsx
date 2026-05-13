@@ -134,7 +134,7 @@ export function HomePageClient({ vehicles, homepageMode = "default", banners = [
       {/* Stats bar */}
       {show("stats") && (
       <section className="container-page reveal-on-scroll" style={{ padding: '60px 40px 0' }}>
-        <div className="stats-bar" style={{ border: '1px solid var(--black-border)', background: 'var(--black-card)' }}>
+        <div className="stats-bar">
           <div>
             <div className="stat-value">{vehicles.length}+</div>
             <div className="stat-label">{t('stats.vehicles', lang)}</div>
@@ -156,8 +156,8 @@ export function HomePageClient({ vehicles, homepageMode = "default", banners = [
 
       {/* Features grid */}
       {show("features") && (
-      <section className="container-page reveal-on-scroll" style={{ padding: '0 40px' }}>
-        <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+      <section className="container-page" style={{ padding: '0 40px' }}>
+        <div className="reveal-on-scroll" style={{ textAlign: 'center', marginBottom: '40px' }}>
           <p className="section-kicker">{c ? c.features.kicker : t('features.kicker', lang)}</p>
           <h2 style={{ fontFamily: "var(--font-display)", fontSize: 'clamp(24px, 3vw, 36px)', fontWeight: 700, color: 'var(--white)', marginTop: '8px' }}>
             {c ? c.features.title : t('features.title', lang)} <span style={{ color: 'var(--gold-light)', fontStyle: 'italic' }}>{c ? c.features.titleHighlight : t('features.titleHighlight', lang)}</span>
@@ -168,7 +168,11 @@ export function HomePageClient({ vehicles, homepageMode = "default", banners = [
           {(c?.features.items ?? []).map((item, i) => {
             const Icon = featureIcons[i] ?? ShieldCheck;
             return (
-              <div key={i} className="features-grid-cell">
+              <div
+                key={i}
+                className="features-grid-cell reveal-on-scroll reveal-on-scroll--spring"
+                style={{ transitionDelay: `${i * 0.13}s` }}
+              >
                 <div className="features-grid-icon">
                   <Icon style={{ width: '20px', height: '20px' }} />
                 </div>
@@ -188,8 +192,8 @@ export function HomePageClient({ vehicles, homepageMode = "default", banners = [
 
       {/* Reviews */}
       {show("reviews") && (
-      <section className="container-page reveal-on-scroll" style={{ padding: '0 40px 80px' }}>
-        <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+      <section className="container-page" style={{ padding: '0 40px 80px' }}>
+        <div className="reveal-on-scroll" style={{ textAlign: 'center', marginBottom: '40px' }}>
           <p className="section-kicker">{c ? c.reviews.kicker : t('reviews.kicker', lang)}</p>
           <h2 style={{ fontFamily: "var(--font-display)", fontSize: 'clamp(24px, 3vw, 36px)', fontWeight: 700, color: 'var(--white)', marginTop: '8px' }}>
             {c ? c.reviews.title : t('reviews.title', lang)}
@@ -198,8 +202,12 @@ export function HomePageClient({ vehicles, homepageMode = "default", banners = [
 
         <div style={{ display: 'grid', gap: '24px', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}>
           {(c?.reviews.items ?? []).map((review, i) => (
-            <article key={review.author} className="pull-quote">
-              <p style={{ fontSize: '14px', lineHeight: 1.8, color: 'var(--cream-muted)', marginTop: '8px' }}>
+            <article
+              key={review.author}
+              className={`pull-quote reveal-on-scroll${i % 2 === 0 ? ' reveal-on-scroll--left' : ''}`}
+              style={{ transitionDelay: `${i * 0.1}s` }}
+            >
+              <p style={{ fontSize: '14px', lineHeight: 1.8, color: 'var(--cream)', marginTop: '8px' }}>
                 {review.text}
               </p>
               <div style={{ marginTop: '16px', fontSize: '14px', fontWeight: 600, color: 'var(--white)', fontStyle: 'normal' }}>
