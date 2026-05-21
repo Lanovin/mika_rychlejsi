@@ -799,6 +799,8 @@ function renderSingleField(
               </div>
               {Object.entries(item).map(([itemKey, itemValue]) => {
                 if (typeof itemValue !== "string") return null;
+                // Hide internal fields that are not user-editable
+                if (itemKey === "icon") return null;
                 const isLong = itemValue.length > 80;
                 return (
                   <div key={itemKey}>

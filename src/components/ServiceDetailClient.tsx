@@ -23,6 +23,7 @@ interface ServiceItem {
 
 interface OtherServiceItem extends ServiceItem {
   idx: number;
+  csTitle?: string;
 }
 
 interface ServiceDetailClientProps {
@@ -64,13 +65,23 @@ export function ServiceDetailClient({ service, serviceEn, others, othersEn, slug
       <div className="gold-divider" />
 
       <section className="container-page mt-10 reveal-on-scroll">
-        <div className="card-panel p-6 md:p-8">
-          <p
-            className="text-base leading-relaxed sm:text-lg"
-            style={{ color: "var(--cream-muted)" }}
-          >
-            {svc.longDesc}
-          </p>
+        <div className="card-panel p-6 md:p-8 space-y-4">
+          {svc.shortDesc && (
+            <p
+              className="text-base leading-relaxed sm:text-lg font-medium"
+              style={{ color: "var(--cream)" }}
+            >
+              {svc.shortDesc}
+            </p>
+          )}
+          {svc.longDesc && svc.longDesc !== svc.shortDesc && (
+            <p
+              className="text-base leading-relaxed"
+              style={{ color: "var(--cream-muted)" }}
+            >
+              {svc.longDesc}
+            </p>
+          )}
         </div>
       </section>
 
@@ -99,8 +110,8 @@ export function ServiceDetailClient({ service, serviceEn, others, othersEn, slug
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {othersList.map((s) => (
             <Link
-              key={slugify(s.title)}
-              href={`/sluzby/${slugify(s.title)}`}
+              key={slugify(s.csTitle ?? s.title)}
+              href={`/sluzby/${slugify(s.csTitle ?? s.title)}`}
               className={`card-panel flex flex-col gap-2 p-5 transition-all duration-200 hover:-translate-y-1 reveal-on-scroll${s.idx % 3 === 1 ? " reveal-on-scroll--delay" : s.idx % 3 === 2 ? " reveal-on-scroll--delay-2" : ""}`}
               style={{ textDecoration: "none" }}
             >

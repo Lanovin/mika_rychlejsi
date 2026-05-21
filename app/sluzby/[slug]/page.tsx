@@ -15,10 +15,11 @@ function slugify(text: string): string {
 }
 
 interface ServiceItem {
-  icon: string;
+  icon?: string;
   title: string;
   shortDesc: string;
   longDesc: string;
+  csTitle?: string;
 }
 
 interface SluzbyContent {
@@ -64,8 +65,9 @@ export default async function ServiceDetailPage({
   const others = cs.services
     .map((s, i) => ({ ...s, idx: i }))
     .filter((s) => slugify(s.title) !== slug);
+  // Include csTitle so the client can always generate the correct (Czech-based) slug
   const othersEn = en.services
-    .map((s, i) => ({ ...s, idx: i }))
+    .map((s, i) => ({ ...s, idx: i, csTitle: cs.services[i]?.title ?? s.title }))
     .filter((_, i) => slugify(cs.services[i]?.title ?? "") !== slug);
 
   return <ServiceDetailClient service={service} serviceEn={serviceEn} others={others} othersEn={othersEn} slug={slug} serviceIndex={serviceIndex} />;

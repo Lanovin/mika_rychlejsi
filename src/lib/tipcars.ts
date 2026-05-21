@@ -107,7 +107,14 @@ function hasVatDeduction(...texts: string[]): boolean {
     return false;
   }
 
-  return normalized.includes("odpocet dph") || normalized.includes("odpoctem dph");
+  return (
+    normalized.includes("odpocet dph")
+    || normalized.includes("odpoctem dph")
+    || normalized.includes("odpoctu dph")
+    || normalized.includes("dph odecitatelna")
+    || normalized.includes("dph odecitatelne")
+    || normalized.includes("odecitatelnou dph")
+  );
 }
 
 function parseCarXml(carXml: string): Vehicle | null {
@@ -163,7 +170,11 @@ function parseCarXml(carXml: string): Vehicle | null {
 
   // Equipment
   const equipmentTexts = getAllTags(carXml, "equipment_text").map(decodeEntities);
-  const vatDeduction = hasVatDeduction(note, ...equipmentTexts);
+
+  // Tipcars dedicated VAT-deduction flag: <dph>A</dph> = yes, <dph>N</dph> = no
+  const dphTag = getTag(carXml, "dph").trim().toUpperCase();
+  const vatDeduction = dphTag === "A"
+    || (dphTag !== "N" && hasVatDeduction(note, ...equipmentTexts));
 
   const fuel = mapFuel(fuelText);
   const transmission = mapTransmission(equipmentTexts);

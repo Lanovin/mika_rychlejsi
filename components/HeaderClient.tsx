@@ -21,10 +21,18 @@ interface KontaktContent {
   hours: { weekdays: string; saturday: string; sunday: string };
 }
 
+interface ServiceItem {
+  title: string;
+  shortDesc: string;
+  longDesc: string;
+}
+
 interface HeaderClientProps {
   alert?: AlertContent;
   kontaktCs?: KontaktContent;
   kontaktEn?: KontaktContent;
+  servicesCs?: ServiceItem[];
+  servicesEn?: ServiceItem[];
 }
 
 function LanguageToggleVisual({ lang, size = 18 }: { lang: "cs" | "en" ; size?: number }) {
@@ -79,31 +87,15 @@ function getRightNav(lang: "cs" | "en") {
   ];
 }
 
-function getSluzbySubmenu(lang: "cs" | "en") {
-  const keys = [
-    "service.financovani",
-    "service.pojisteni",
-    "service.vykup",
-    "service.zprostredkovani",
-    "service.protiucet",
-    "service.hotove",
-    "service.uver",
-    "service.prevody",
-  ];
-  // Slugs are based on Czech labels (URLs don't change)
-  const csLabels = [
-    "Financování vozu",
-    "Pojištění",
-    "Výkup vozů za hotové",
-    "Zprostředkování prodeje",
-    "Nákup na protiúčet",
-    "Nákup za hotové",
-    "Nákup na úvěr",
-    "Převody vozidel na městském úřadě",
-  ];
-  return keys.map((key, i) => ({
-    label: t(key, lang),
-    href: `/sluzby/${slugify(csLabels[i])}`
+function getSluzbySubmenu(
+  servicesCs: ServiceItem[],
+  servicesEn: ServiceItem[],
+  lang: "cs" | "en"
+) {
+  // Slugs are always derived from the Czech title (URL never changes with language)
+  return servicesCs.map((csService, i) => ({
+    label: lang === "en" ? (servicesEn[i]?.title ?? csService.title) : csService.title,
+    href: `/sluzby/${slugify(csService.title)}`,
   }));
 }
 
@@ -126,7 +118,7 @@ function MenuIcon({ open }: { open: boolean }) {
   );
 }
 
-export function HeaderClient({ alert, kontaktCs, kontaktEn }: HeaderClientProps) {
+export function HeaderClient({ alert, kontaktCs, kontaktEn, servicesCs = [], servicesEn = [] }: HeaderClientProps) {
   const pathname = usePathname();
   const { lang, toggleLang } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
@@ -146,7 +138,7 @@ export function HeaderClient({ alert, kontaktCs, kontaktEn }: HeaderClientProps)
 
   const leftNav = getLeftNav(lang);
   const rightNav = getRightNav(lang);
-  const sluzbySubmenu = getSluzbySubmenu(lang);
+  const sluzbySubmenu = getSluzbySubmenu(servicesCs, servicesEn, lang);
   const isServicesPath = pathname === "/sluzby" || pathname.startsWith("/sluzby/");
 
   const dismissSluzby = () => {
