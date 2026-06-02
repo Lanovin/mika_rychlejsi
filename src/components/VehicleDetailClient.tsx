@@ -435,6 +435,138 @@ export function VehicleDetailClient({ car }: { car: Vehicle }) {
               ))}
             </div>
           </div>
+
+          {/* Basic info — moved here to fill the left column under the form */}
+          <div className="card-panel p-4 sm:p-6">
+            <h2
+              style={{
+                fontSize: "14px",
+                fontWeight: 600,
+                color: "var(--white)",
+              }}
+            >
+              {t("detail.basicInfo", lang)}
+            </h2>
+            <dl
+              className="mt-3 grid grid-cols-1 gap-0 text-sm sm:grid-cols-2 sm:gap-x-4"
+              style={{ color: "var(--cream)" }}
+            >
+              <div
+                className="flex justify-between gap-4 py-2"
+                style={{ borderBottom: "1px solid var(--black-border)" }}
+              >
+                <dt className="text-muted">{t("detail.makeModel", lang)}</dt>
+                <dd className="font-medium text-right">
+                  {car.make} {car.model}
+                </dd>
+              </div>
+              <div
+                className="flex justify-between gap-4 py-2"
+                style={{ borderBottom: "1px solid var(--black-border)" }}
+              >
+                <dt className="text-muted">{t("detail.year", lang)}</dt>
+                <dd className="font-medium text-right">{car.year}</dd>
+              </div>
+              <div
+                className="flex justify-between gap-4 py-2"
+                style={{ borderBottom: "1px solid var(--black-border)" }}
+              >
+                <dt className="text-muted">{t("detail.mileage", lang)}</dt>
+                <dd className="font-medium text-right">{formattedMileage} km</dd>
+              </div>
+              <div
+                className="flex justify-between gap-4 py-2"
+                style={{ borderBottom: "1px solid var(--black-border)" }}
+              >
+                <dt className="text-muted">{t("detail.fuel", lang)}</dt>
+                <dd className="font-medium text-right">{car.fuel}</dd>
+              </div>
+              <div
+                className="flex justify-between gap-4 py-2"
+                style={{ borderBottom: "1px solid var(--black-border)" }}
+              >
+                <dt className="text-muted">{t("detail.transmission", lang)}</dt>
+                <dd className="font-medium text-right">{car.transmission}</dd>
+              </div>
+              <div
+                className="flex justify-between gap-4 py-2"
+                style={{ borderBottom: "1px solid var(--black-border)" }}
+              >
+                <dt className="text-muted">{t("detail.power", lang)}</dt>
+                <dd className="font-medium text-right">{car.powerKw} kW</dd>
+              </div>
+              <div
+                className="flex justify-between gap-4 py-2"
+                style={{ borderBottom: "1px solid var(--black-border)" }}
+              >
+                <dt className="text-muted">{t("detail.body", lang)}</dt>
+                <dd className="font-medium text-right">{car.body}</dd>
+              </div>
+              {car.color && (
+                <div
+                  className="flex justify-between gap-4 py-2"
+                  style={{ borderBottom: "1px solid var(--black-border)" }}
+                >
+                  <dt className="text-muted">{lang === "cs" ? "Barva" : "Color"}</dt>
+                  <dd className="font-medium text-right">{car.color}</dd>
+                </div>
+              )}
+              {car.engineVolume > 0 && (
+                <div
+                  className="flex justify-between gap-4 py-2"
+                  style={{ borderBottom: "1px solid var(--black-border)" }}
+                >
+                  <dt className="text-muted">{lang === "cs" ? "Objem motoru" : "Engine"}</dt>
+                  <dd className="font-medium text-right">{car.engineVolume} ccm</dd>
+                </div>
+              )}
+              {car.vin && (
+                <div
+                  className="flex justify-between gap-4 py-2"
+                  style={{ borderBottom: "1px solid var(--black-border)" }}
+                >
+                  <dt className="text-muted">VIN</dt>
+                  <dd className="font-medium text-right" style={{ fontSize: "12px" }}>{car.vin}</dd>
+                </div>
+              )}
+              {car.stk && car.stk !== "0" && (
+                <div
+                  className="flex justify-between gap-4 py-2"
+                  style={{ borderBottom: "1px solid var(--black-border)" }}
+                >
+                  <dt className="text-muted">{lang === "cs" ? "STK do" : "MOT until"}</dt>
+                  <dd className="font-medium text-right">
+                    {car.stk.length === 6 ? `${car.stk.slice(4)}/${car.stk.slice(0, 4)}` : car.stk}
+                  </dd>
+                </div>
+              )}
+              {car.condition && (
+                <div
+                  className="flex justify-between gap-4 py-2"
+                  style={{ borderBottom: "1px solid var(--black-border)" }}
+                >
+                  <dt className="text-muted">{lang === "cs" ? "Stav" : "Condition"}</dt>
+                  <dd className="font-medium text-right">{car.condition}</dd>
+                </div>
+              )}
+              {car.kind && (
+                <div
+                  className="flex justify-between gap-4 py-2"
+                  style={{ borderBottom: "1px solid var(--black-border)" }}
+                >
+                  <dt className="text-muted">{lang === "cs" ? "Typ" : "Type"}</dt>
+                  <dd className="font-medium text-right">{car.kind}</dd>
+                </div>
+              )}
+              <div
+                className="flex justify-between gap-4 py-2"
+                style={{ borderBottom: "1px solid var(--black-border)" }}
+              >
+                <dt className="text-muted">{t("detail.location", lang)}</dt>
+                <dd className="font-medium text-right">{car.location}</dd>
+              </div>
+            </dl>
+          </div>
         </section>
 
         {/* ─── Desktop sidebar ─── */}
@@ -608,139 +740,8 @@ export function VehicleDetailClient({ car }: { car: Vehicle }) {
         )}
       </div>
 
-      <section className="mt-6 sm:mt-10 grid gap-4 sm:gap-6 lg:gap-8 lg:grid-cols-2 reveal-on-scroll">
-        <div className="card-panel p-4 sm:p-6">
-          <h2
-            style={{
-              fontSize: "14px",
-              fontWeight: 600,
-              color: "var(--white)",
-            }}
-          >
-            {t("detail.basicInfo", lang)}
-          </h2>
-          <dl
-            className="mt-3 grid grid-cols-1 gap-0 text-sm sm:grid-cols-2 sm:gap-x-4"
-            style={{ color: "var(--cream)" }}
-          >
-            <div
-              className="flex justify-between gap-4 py-2"
-              style={{ borderBottom: "1px solid var(--black-border)" }}
-            >
-              <dt className="text-muted">{t("detail.makeModel", lang)}</dt>
-              <dd className="font-medium text-right">
-                {car.make} {car.model}
-              </dd>
-            </div>
-            <div
-              className="flex justify-between gap-4 py-2"
-              style={{ borderBottom: "1px solid var(--black-border)" }}
-            >
-              <dt className="text-muted">{t("detail.year", lang)}</dt>
-              <dd className="font-medium text-right">{car.year}</dd>
-            </div>
-            <div
-              className="flex justify-between gap-4 py-2"
-              style={{ borderBottom: "1px solid var(--black-border)" }}
-            >
-              <dt className="text-muted">{t("detail.mileage", lang)}</dt>
-              <dd className="font-medium text-right">{formattedMileage} km</dd>
-            </div>
-            <div
-              className="flex justify-between gap-4 py-2"
-              style={{ borderBottom: "1px solid var(--black-border)" }}
-            >
-              <dt className="text-muted">{t("detail.fuel", lang)}</dt>
-              <dd className="font-medium text-right">{car.fuel}</dd>
-            </div>
-            <div
-              className="flex justify-between gap-4 py-2"
-              style={{ borderBottom: "1px solid var(--black-border)" }}
-            >
-              <dt className="text-muted">{t("detail.transmission", lang)}</dt>
-              <dd className="font-medium text-right">{car.transmission}</dd>
-            </div>
-            <div
-              className="flex justify-between gap-4 py-2"
-              style={{ borderBottom: "1px solid var(--black-border)" }}
-            >
-              <dt className="text-muted">{t("detail.power", lang)}</dt>
-              <dd className="font-medium text-right">{car.powerKw} kW</dd>
-            </div>
-            <div
-              className="flex justify-between gap-4 py-2"
-              style={{ borderBottom: "1px solid var(--black-border)" }}
-            >
-              <dt className="text-muted">{t("detail.body", lang)}</dt>
-              <dd className="font-medium text-right">{car.body}</dd>
-            </div>
-            {car.color && (
-              <div
-                className="flex justify-between gap-4 py-2"
-                style={{ borderBottom: "1px solid var(--black-border)" }}
-              >
-                <dt className="text-muted">{lang === "cs" ? "Barva" : "Color"}</dt>
-                <dd className="font-medium text-right">{car.color}</dd>
-              </div>
-            )}
-            {car.engineVolume > 0 && (
-              <div
-                className="flex justify-between gap-4 py-2"
-                style={{ borderBottom: "1px solid var(--black-border)" }}
-              >
-                <dt className="text-muted">{lang === "cs" ? "Objem motoru" : "Engine"}</dt>
-                <dd className="font-medium text-right">{car.engineVolume} ccm</dd>
-              </div>
-            )}
-            {car.vin && (
-              <div
-                className="flex justify-between gap-4 py-2"
-                style={{ borderBottom: "1px solid var(--black-border)" }}
-              >
-                <dt className="text-muted">VIN</dt>
-                <dd className="font-medium text-right" style={{ fontSize: "12px" }}>{car.vin}</dd>
-              </div>
-            )}
-            {car.stk && car.stk !== "0" && (
-              <div
-                className="flex justify-between gap-4 py-2"
-                style={{ borderBottom: "1px solid var(--black-border)" }}
-              >
-                <dt className="text-muted">{lang === "cs" ? "STK do" : "MOT until"}</dt>
-                <dd className="font-medium text-right">
-                  {car.stk.length === 6 ? `${car.stk.slice(4)}/${car.stk.slice(0, 4)}` : car.stk}
-                </dd>
-              </div>
-            )}
-            {car.condition && (
-              <div
-                className="flex justify-between gap-4 py-2"
-                style={{ borderBottom: "1px solid var(--black-border)" }}
-              >
-                <dt className="text-muted">{lang === "cs" ? "Stav" : "Condition"}</dt>
-                <dd className="font-medium text-right">{car.condition}</dd>
-              </div>
-            )}
-            {car.kind && (
-              <div
-                className="flex justify-between gap-4 py-2"
-                style={{ borderBottom: "1px solid var(--black-border)" }}
-              >
-                <dt className="text-muted">{lang === "cs" ? "Typ" : "Type"}</dt>
-                <dd className="font-medium text-right">{car.kind}</dd>
-              </div>
-            )}
-            <div
-              className="flex justify-between gap-4 py-2"
-              style={{ borderBottom: "1px solid var(--black-border)" }}
-            >
-              <dt className="text-muted">{t("detail.location", lang)}</dt>
-              <dd className="font-medium text-right">{car.location}</dd>
-            </div>
-          </dl>
-        </div>
-
-        <div className="card-panel p-4 sm:p-6">
+      <section className="mt-6 sm:mt-10 reveal-on-scroll">
+        <div className="card-panel p-4 sm:p-6 mx-auto" style={{ maxWidth: "960px" }}>
           <h2
             style={{
               fontSize: "14px",
