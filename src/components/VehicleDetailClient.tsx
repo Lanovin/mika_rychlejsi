@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef, type FormEvent } from "react";
+import { useState, useCallback, useEffect, useRef, useMemo, type FormEvent } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, X, ZoomIn, Gauge, Fuel, CalendarRange, Settings2 } from "lucide-react";
@@ -48,6 +48,77 @@ export function VehicleDetailClient({ car }: { car: Vehicle }) {
     }
     touchStartX.current = null;
   };
+
+  // Only render preload images after client mount to avoid hydration mismatch
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+
+  // Thumbnail strip scrollbar
+  const thumbsRef = useRef<HTMLDivElement>(null);
+  const dragRef = useRef({ active: false, startX: 0, startScroll: 0 });
+  const [thumbsScroll, setThumbsScroll] = useState({ pos: 0, size: 1 });
+
+  const preloadIndices = useMemo(
+    () => [selectedIdx - 1, selectedIdx + 1, selectedIdx + 2].filter(i => i >= 0 && i < allImages.length),
+    [selectedIdx, allImages.length]
+  );
+
+  const updateThumbsScroll = useCallback(() => {
+    const el = thumbsRef.current;
+    if (!el) return;
+    const max = el.scrollWidth - el.clientWidth;
+    setThumbsScroll({
+      pos: max > 0 ? el.scrollLeft / max : 0,
+      size: el.scrollWidth > 0 ? el.clientWidth / el.scrollWidth : 1,
+    });
+  }, []);
+
+  // Auto-scroll thumbnails to keep selected visible
+  useEffect(() => {
+    const el = thumbsRef.current;
+    if (!el || allImages.length <= 1) return;
+    const child = el.children[selectedIdx] as HTMLElement | undefined;
+    if (!child) return;
+    const { offsetLeft, offsetWidth } = child;
+    const { scrollLeft, clientWidth } = el;
+    if (offsetLeft < scrollLeft) {
+      el.scrollTo({ left: Math.max(0, offsetLeft - 8), behavior: "smooth" });
+    } else if (offsetLeft + offsetWidth > scrollLeft + clientWidth) {
+      el.scrollTo({ left: offsetLeft + offsetWidth - clientWidth + 8, behavior: "smooth" });
+    }
+    setTimeout(updateThumbsScroll, 350);
+  }, [selectedIdx, allImages.length, updateThumbsScroll]);
+
+  // Initialise scrollbar state after mount
+  useEffect(() => { updateThumbsScroll(); }, [updateThumbsScroll]);
+
+  const onScrollbarMouseDown = useCallback((e: React.MouseEvent) => {
+    const el = thumbsRef.current;
+    if (!el) return;
+    dragRef.current = { active: true, startX: e.clientX, startScroll: el.scrollLeft };
+    e.preventDefault();
+  }, []);
+
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      if (!dragRef.current.active) return;
+      const el = thumbsRef.current;
+      if (!el) return;
+      const maxScroll = el.scrollWidth - el.clientWidth;
+      const thumbSize = el.clientWidth / el.scrollWidth;
+      const draggable = el.clientWidth * (1 - thumbSize);
+      if (draggable <= 0) return;
+      const dx = e.clientX - dragRef.current.startX;
+      el.scrollLeft = Math.max(0, Math.min(maxScroll, dragRef.current.startScroll + (dx / draggable) * maxScroll));
+    };
+    const onUp = () => { dragRef.current.active = false; };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+  }, []);
 
   const formattedPrice = new Intl.NumberFormat(locale, {
     style: "currency",
@@ -249,6 +320,20 @@ export function VehicleDetailClient({ car }: { car: Vehicle }) {
                   {lang === "cs" ? "Bez fotografie" : "No photo"}
                 </div>
               )}
+              {/* Preload adjacent images — client-only to avoid hydration mismatch */}
+              {mounted && preloadIndices.map(i => (
+                <Image
+                  key={`preload-${i}`}
+                  src={allImages[i]}
+                  alt=""
+                  fill
+                  className="object-cover"
+                  style={{ opacity: 0, pointerEvents: "none" }}
+                  sizes="(min-width: 1024px) 60vw, 100vw"
+                  priority
+                  aria-hidden="true"
+                />
+              ))}
               <div
                 className="absolute inset-0 pointer-events-none"
                 style={{ background: "linear-gradient(to top, rgba(10,10,10,0.4), transparent 40%)" }}
@@ -377,40 +462,62 @@ export function VehicleDetailClient({ car }: { car: Vehicle }) {
 
           {/* Thumbnail strip */}
           {allImages.length > 1 && (
-            <div
-              className="flex gap-1.5 sm:gap-2 overflow-x-auto pb-1"
-              style={{ scrollbarWidth: "thin", scrollbarColor: "var(--black-border) transparent" }}
-            >
-              {allImages.map((image, index) => (
-                <button
-                  key={`thumb-${index}`}
-                  onClick={() => setSelectedIdx(index)}
-                  className="relative flex-shrink-0 overflow-hidden"
-                  style={{
-                    width: "4rem",
-                    height: "2.8rem",
-                    background: "var(--black-rich)",
-                    border: index === selectedIdx ? "2px solid var(--gold)" : "2px solid transparent",
-                    cursor: "pointer",
-                    opacity: index === selectedIdx ? 1 : 0.6,
-                    transition: "all 0.2s",
-                    borderRadius: 0,
-                    padding: 0,
-                  }}
-                  onMouseEnter={(e) => { if (index !== selectedIdx) e.currentTarget.style.opacity = "0.85"; }}
-                  onMouseLeave={(e) => { if (index !== selectedIdx) e.currentTarget.style.opacity = "0.6"; }}
-                  aria-label={`Photo ${index + 1}`}
+            <>
+              <div
+                ref={thumbsRef}
+                className="no-scrollbar flex gap-1.5 sm:gap-2 overflow-x-auto"
+                onScroll={updateThumbsScroll}
+              >
+                {allImages.map((image, index) => (
+                  <button
+                    key={`thumb-${index}`}
+                    onClick={() => setSelectedIdx(index)}
+                    className="relative flex-shrink-0 overflow-hidden"
+                    style={{
+                      width: "4rem",
+                      height: "2.8rem",
+                      background: "var(--black-rich)",
+                      border: index === selectedIdx ? "2px solid var(--gold)" : "2px solid transparent",
+                      cursor: "pointer",
+                      opacity: index === selectedIdx ? 1 : 0.6,
+                      transition: "all 0.2s",
+                      borderRadius: 0,
+                      padding: 0,
+                    }}
+                    onMouseEnter={(e) => { if (index !== selectedIdx) e.currentTarget.style.opacity = "0.85"; }}
+                    onMouseLeave={(e) => { if (index !== selectedIdx) e.currentTarget.style.opacity = "0.6"; }}
+                    aria-label={`Photo ${index + 1}`}
+                  >
+                    <Image
+                      src={image}
+                      alt={`${car.make} ${car.model} ${index + 1}`}
+                      fill
+                      className="object-cover"
+                      sizes="80px"
+                    />
+                  </button>
+                ))}
+              </div>
+              {/* Draggable scroll indicator */}
+              {thumbsScroll.size < 0.999 && (
+                <div
+                  className="relative mt-2 h-[3px]"
+                  style={{ background: "rgba(255,255,255,0.08)", borderRadius: "2px" }}
                 >
-                  <Image
-                    src={image}
-                    alt={`${car.make} ${car.model} ${index + 1}`}
-                    fill
-                    className="object-cover"
-                    sizes="80px"
+                  <div
+                    className="absolute top-0 h-full select-none"
+                    style={{
+                      left: `${thumbsScroll.pos * (1 - thumbsScroll.size) * 100}%`,
+                      width: `${thumbsScroll.size * 100}%`,
+                      background: "var(--gold-dim)",
+                      borderRadius: "2px",
+                      cursor: "grab",
+                    }}
+                    onMouseDown={onScrollbarMouseDown}
                   />
-                </button>
-              ))}
-            </div>
+                </div>
+              )}
+            </>
           )}
 
           {/* Quick reasons */}

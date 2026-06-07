@@ -1321,6 +1321,15 @@ select option {
   flex-shrink: 0;
 }
 
+/* ─── Hide native scrollbar utility ──────────────── */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 /* ─── VehicleCard ─────────────────────────────────── */
 
 .vehicle-card {

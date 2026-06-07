@@ -21,7 +21,7 @@ interface HomepageContent {
 export const revalidate = 300;
 
 export const metadata: Metadata = {
-  title: "Mika Auto – Autobazar | Kvalitní ojeté vozy Brno",
+  title: "Mika Auto – Autobazar | Kvalitní ojeté vozy Praha 9 - Čakovice",
   description: "Autobazar Mika Auto – široká nabídka prověřených ojetých vozů. Výkup aut, financování, pojištění. Brno, od roku 2007.",
   alternates: { canonical: "/" },
 };

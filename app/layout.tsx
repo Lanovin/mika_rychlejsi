@@ -12,7 +12,7 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.mikaauto.cz";
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "Mika Auto – Autobazar | Kvalitní ojeté vozy Brno",
+    default: "Mika Auto – Autobazar | Kvalitní ojeté vozy Praha 9 - Čakovice",
     template: "%s | Mika Auto – Autobazar",
   },
   description: "Autobazar Mika Auto v Brně – široká nabídka prověřených ojetých vozů Škoda, Volkswagen, Hyundai a dalších značek. Výkup, financování, pojištění. Od roku 2007.",
@@ -36,7 +36,7 @@ export const metadata: Metadata = {
     locale: "cs_CZ",
     url: SITE_URL,
     siteName: "Mika Auto – Autobazar",
-    title: "Mika Auto – Autobazar | Kvalitní ojeté vozy Brno",
+    title: "Mika Auto – Autobazar | Kvalitní ojeté vozy Praha 9 - Čakovice",
     description: "Prověřené ojeté vozy s garancí původu. Výkup, financování, pojištění vozidel. Autobazar Mika Auto – od roku 2007.",
     images: [
       {
@@ -49,7 +49,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Mika Auto – Autobazar | Kvalitní ojeté vozy Brno",
+    title: "Mika Auto – Autobazar | Kvalitní ojeté vozy Praha 9 - Čakovice",
     description: "Prověřené ojeté vozy s garancí původu. Autobazar Mika Auto – od roku 2007.",
   },
   alternates: {
