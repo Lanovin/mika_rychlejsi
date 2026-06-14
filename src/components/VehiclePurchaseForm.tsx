@@ -24,6 +24,8 @@ export function VehiclePurchaseForm() {
     modelOther: "",
     body: "",
     fuel: "",
+    color: "",
+    colorOther: "",
     year: "",
     mileage: "",
     engineCC: "",
@@ -68,11 +70,18 @@ export function VehiclePurchaseForm() {
     setSending(true);
     setError("");
 
+    const colorLabel = form.color === "jina"
+      ? (form.colorOther || t("color.jina", "cs"))
+      : form.color
+        ? t(`color.${form.color}`, "cs")
+        : "";
+
     const lines = [
       `Značka: ${brandLabel}`,
       `Model: ${modelLabel}`,
       `Karoserie: ${form.body}`,
       `Palivo: ${form.fuel}`,
+      colorLabel ? `Barva: ${colorLabel}` : "",
       `Rok: ${form.year}`,
       `Najeto km: ${form.mileage}`,
       `Objem ccm: ${form.engineCC}`,
@@ -139,6 +148,26 @@ export function VehiclePurchaseForm() {
     { value: "lpg", label: t("fuel.lpg", lang) },
     { value: "cng", label: t("fuel.cng", lang) },
     { value: "elektro", label: t("fuel.elektro", lang) },
+  ];
+
+  const colorOptions = [
+    { value: "bila", label: t("color.bila", lang), hex: "#F5F5F5" },
+    { value: "cerna", label: t("color.cerna", lang), hex: "#0A0A0A" },
+    { value: "stribrna", label: t("color.stribrna", lang), hex: "#C7C7CC" },
+    { value: "seda", label: t("color.seda", lang), hex: "#6E6E73" },
+    { value: "modra", label: t("color.modra", lang), hex: "#1D4ED8" },
+    { value: "svetle_modra", label: t("color.svetle_modra", lang), hex: "#60A5FA" },
+    { value: "cervena", label: t("color.cervena", lang), hex: "#DC2626" },
+    { value: "vinova", label: t("color.vinova", lang), hex: "#7B1E2B" },
+    { value: "zelena", label: t("color.zelena", lang), hex: "#15803D" },
+    { value: "zluta", label: t("color.zluta", lang), hex: "#EAB308" },
+    { value: "oranzova", label: t("color.oranzova", lang), hex: "#EA580C" },
+    { value: "hneda", label: t("color.hneda", lang), hex: "#78350F" },
+    { value: "bezova", label: t("color.bezova", lang), hex: "#D6C7A1" },
+    { value: "zlata", label: t("color.zlata", lang), hex: "#C9A84C" },
+    { value: "fialova", label: t("color.fialova", lang), hex: "#7C3AED" },
+    { value: "ruzova", label: t("color.ruzova", lang), hex: "#EC4899" },
+    { value: "jina", label: t("color.jina", lang), hex: null as string | null },
   ];
 
   const fieldRestBorderColor = "rgba(226, 201, 126, 0.38)";
@@ -398,6 +427,65 @@ export function VehiclePurchaseForm() {
             </select>
           </div>
           </div>
+        </div>
+
+        {/* Color */}
+        <div style={sectionStyle}>
+          <label style={labelStyle}>{t("vykup.color", lang)}</label>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginTop: "8px" }}>
+            {colorOptions.map((opt) => {
+              const selected = form.color === opt.value;
+              return (
+                <label
+                  key={opt.value}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    padding: "6px 12px 6px 8px",
+                    fontSize: "13px",
+                    border: `1px solid ${selected ? "var(--gold-dim)" : "var(--black-border)"}`,
+                    background: selected ? "rgba(201,168,76,0.08)" : "var(--black-card)",
+                    color: selected ? "var(--gold)" : "var(--cream-muted)",
+                    cursor: "pointer",
+                    transition: "all 0.15s",
+                  }}
+                >
+                  <input
+                    type="radio"
+                    name="color"
+                    value={opt.value}
+                    checked={selected}
+                    onChange={() => set("color", opt.value)}
+                    style={{ display: "none" }}
+                  />
+                  <span
+                    style={{
+                      width: "16px",
+                      height: "16px",
+                      borderRadius: "50%",
+                      background: opt.hex ?? "conic-gradient(from 0deg, #DC2626, #EAB308, #15803D, #1D4ED8, #7C3AED, #DC2626)",
+                      border: "1px solid rgba(255,255,255,0.3)",
+                      boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.25)",
+                      flexShrink: 0,
+                    }}
+                  />
+                  {opt.label}
+                </label>
+              );
+            })}
+          </div>
+          {form.color === "jina" && (
+            <input
+              type="text"
+              placeholder={lang === "cs" ? "Upřesněte barvu" : "Specify colour"}
+              value={form.colorOther}
+              onChange={(e) => set("colorOther", e.target.value)}
+              style={{ ...inputStyle, marginTop: "12px" }}
+              onFocus={(e) => setFieldFocusState(e.currentTarget, true)}
+              onBlur={(e) => setFieldFocusState(e.currentTarget, false)}
+            />
+          )}
         </div>
 
         {/* Technical details */}
