@@ -160,8 +160,12 @@ async function sendEmail(msg: ContactMessage) {
     auth: { user, pass },
   });
 
+  // U některých poskytovatelů (např. Brevo) je přihlašovací login jiný než
+  // odesílací adresa. SMTP_FROM nechá nastavit ověřeného odesílatele zvlášť.
+  const fromAddress = process.env.SMTP_FROM?.trim() || user;
+
   await transporter.sendMail({
-    from: `"Mika Auto Web" <${user}>`,
+    from: `"Mika Auto Web" <${fromAddress}>`,
     ...(msg.email ? { replyTo: msg.email } : {}),
     to: contactEmail,
     subject,
