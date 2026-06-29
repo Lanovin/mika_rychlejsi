@@ -1,23 +1,8 @@
-import { createHash, createHmac, randomUUID } from "node:crypto";
-import path from "node:path";
+import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { readStoredJson, writeStoredJson } from "@/src/lib/server-storage";
 
 export type UserRole = "admin" | "user";
-
-interface StoredUser {
-  id: string;
-  username: string;
-  email: string;
-  passwordHash: string;
-  role: UserRole;
-  createdAt: string;
-}
-
-interface UserFile {
-  users: StoredUser[];
-}
 
 export interface SessionUser {
   id: string;
@@ -27,17 +12,28 @@ export interface SessionUser {
 }
 
 const SESSION_COOKIE = "mika-user-session";
-const DEFAULT_ADMIN = {
-  id: "admin",
-  username: "admin",
-  email: "admin@mikaauto.local",
-  password: "admin"
-};
 const authSecret = process.env.AUTH_SESSION_SECRET ?? "mika-auth-secret-change-me";
-const usersPath = path.join(process.cwd(), "data", "users.json");
 
-function hashPassword(password: string) {
-  return createHash("sha256").update(password).digest("hex");
+/**
+ * Admin přihlašovací údaje se berou výhradně z prostředí (env).
+ * V kódu není uložené žádné konkrétní heslo.
+ *
+ * Dokud nejsou nastavené OBĚ proměnné ADMIN_LOGIN i ADMIN_PASSWORD,
+ * je admin přihlášení vypnuté (nelze se přihlásit).
+ *
+ * Na Vercelu: po změně těchto proměnných je nutný Redeploy.
+ */
+function getAdminCredentials() {
+  const username = (process.env.ADMIN_LOGIN ?? "").trim();
+  const password = process.env.ADMIN_PASSWORD ?? "";
+  return { username, password };
+}
+
+/** Konstantně-časové porovnání dvou řetězců (přes jejich sha256 otisk). */
+function safeEqual(a: string, b: string) {
+  const ah = createHash("sha256").update(a).digest();
+  const bh = createHash("sha256").update(b).digest();
+  return timingSafeEqual(ah, bh);
 }
 
 function signPayload(payload: string) {
@@ -60,45 +56,6 @@ function decodeSession(value: string): SessionUser | null {
   } catch {
     return null;
   }
-}
-
-async function readUsersFile(): Promise<UserFile> {
-  const data = await readStoredJson<UserFile>({
-    storeKey: "users",
-    filePath: usersPath,
-    defaultValue: () => ({ users: [] }),
-  });
-
-  if (!data.users.some((user) => user.username === DEFAULT_ADMIN.username)) {
-    data.users.unshift({
-      id: DEFAULT_ADMIN.id,
-      username: DEFAULT_ADMIN.username,
-      email: DEFAULT_ADMIN.email,
-      passwordHash: hashPassword(DEFAULT_ADMIN.password),
-      role: "admin",
-      createdAt: new Date().toISOString()
-    });
-    await writeUsersFile(data);
-  }
-
-  return data;
-}
-
-async function writeUsersFile(data: UserFile) {
-  await writeStoredJson({
-    storeKey: "users",
-    filePath: usersPath,
-    data,
-  });
-}
-
-function toSessionUser(user: StoredUser): SessionUser {
-  return {
-    id: user.id,
-    username: user.username,
-    email: user.email,
-    role: user.role
-  };
 }
 
 async function setSession(user: SessionUser) {
@@ -140,54 +97,28 @@ export async function requireAdminAuth() {
   return user;
 }
 
-export async function loginUser(identifier: string, password: string) {
-  const normalizedIdentifier = identifier.trim().toLowerCase();
-  const passwordHash = hashPassword(password);
-  const data = await readUsersFile();
-  const user = data.users.find((item) => {
-    return item.username.toLowerCase() === normalizedIdentifier || item.email.toLowerCase() === normalizedIdentifier;
-  });
+export async function loginUser(identifier: string, password: string): Promise<SessionUser | null> {
+  const { username, password: adminPassword } = getAdminCredentials();
 
-  if (!user || user.passwordHash !== passwordHash) {
+  // Bez nastavených env proměnných se nelze přihlásit (žádné heslo v kódu).
+  if (!username || !adminPassword) {
     return null;
   }
 
-  const sessionUser = toSessionUser(user);
-  await setSession(sessionUser);
-  return sessionUser;
-}
+  const matchesIdentifier = safeEqual(identifier.trim().toLowerCase(), username.toLowerCase());
+  const matchesPassword = safeEqual(password, adminPassword);
 
-export async function registerUser(username: string, email: string, password: string) {
-  const normalizedUsername = username.trim();
-  const normalizedEmail = email.trim().toLowerCase();
-
-  if (!normalizedUsername || !normalizedEmail || !password.trim()) {
-    throw new Error("Vyplňte uživatelské jméno, e-mail i heslo.");
+  if (!matchesIdentifier || !matchesPassword) {
+    return null;
   }
 
-  const data = await readUsersFile();
-  const usernameExists = data.users.some((user) => user.username.toLowerCase() === normalizedUsername.toLowerCase());
-  if (usernameExists) {
-    throw new Error("Toto uživatelské jméno už existuje.");
-  }
-
-  const emailExists = data.users.some((user) => user.email.toLowerCase() === normalizedEmail);
-  if (emailExists) {
-    throw new Error("Tento e-mail už je registrovaný.");
-  }
-
-  const user: StoredUser = {
-    id: randomUUID(),
-    username: normalizedUsername,
-    email: normalizedEmail,
-    passwordHash: hashPassword(password),
-    role: "user",
-    createdAt: new Date().toISOString()
+  const sessionUser: SessionUser = {
+    id: "admin",
+    username,
+    email: `${username}@mikaauto.local`,
+    role: "admin"
   };
 
-  data.users.push(user);
-  await writeUsersFile(data);
-  const sessionUser = toSessionUser(user);
   await setSession(sessionUser);
   return sessionUser;
 }
@@ -195,12 +126,4 @@ export async function registerUser(username: string, email: string, password: st
 export async function logoutUser() {
   const cookieStore = await cookies();
   cookieStore.delete(SESSION_COOKIE);
-}
-
-export function getDefaultAdminCredentials() {
-  return {
-    username: DEFAULT_ADMIN.username,
-    password: DEFAULT_ADMIN.password,
-    usesDefaults: true
-  };
 }

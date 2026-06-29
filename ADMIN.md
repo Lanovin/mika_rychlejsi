@@ -2,17 +2,26 @@
 
 ## Přihlášení
 
-Společné přihlášení je dostupné na `/admin/login`.
+Přihlášení do administrace je dostupné na `/admin/login`.
 
-Běžní návštěvníci si zde mohou vytvořit účet přes uživatelské jméno, e-mail a heslo.
-Administrace vozů je přístupná speciálním účtem:
+Přihlašovací údaje se berou **výhradně z proměnných prostředí** – v kódu není
+uložené žádné konkrétní heslo:
 
-- Uživatelské jméno: `admin`
-- Heslo: `admin`
+- `ADMIN_LOGIN` – přihlašovací jméno
+- `ADMIN_PASSWORD` – heslo
+- `AUTH_SESSION_SECRET` – tajný klíč pro podpis přihlašovací cookie
 
-Po přihlášení admin účtu se zpřístupní stránka `/admin`.
+Dokud nejsou nastavené **obě** proměnné `ADMIN_LOGIN` i `ADMIN_PASSWORD`,
+je přihlášení vypnuté (nelze se přihlásit). Po přihlášení se zpřístupní `/admin`.
 
-Před produkčním nasazením doporučujeme změnit `AUTH_SESSION_SECRET` v `.env.local` podle vzoru v `.env.example` a upravit admin heslo v `data/users.json`.
+### Lokálně
+Nastavte proměnné v `.env.local` podle vzoru v `.env.example` / `.env.local.example`.
+
+### Na Vercelu
+V Project → Settings → Environment Variables přidejte `ADMIN_LOGIN`,
+`ADMIN_PASSWORD` a `AUTH_SESSION_SECRET`. **Po každé změně je nutný Redeploy**
+(Deployments → ⋯ → Redeploy) – samotná změna proměnné se na běžící verzi
+neprojeví. Push na GitHub k tomu potřeba není.
 
 ## Co klient zvládne z administrace
 
