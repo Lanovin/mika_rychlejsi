@@ -1,5 +1,5 @@
 import Image from "next/image";
-import instagramLogo from "@/instagram.jpg";
+import instagramLogo from "@/instagram.png";
 
 const INSTAGRAM_URL =
   "https://www.instagram.com/mikaauto.cz?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==";
