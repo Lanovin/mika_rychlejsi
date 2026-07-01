@@ -50,27 +50,6 @@ export function ContactPageClient({
   ];
   const layout = c._layout;
   const show = (key: string) => !layout || layout.includes(key);
-  const processPanel = show("process") ? (
-    <div
-      className="p-5 reveal-on-scroll reveal-on-scroll--delay-2"
-      style={{
-        background: "var(--black-card)",
-        border: "1px solid var(--black-border)",
-      }}
-    >
-      <h2
-        className="text-sm font-semibold"
-        style={{ color: "var(--cream)" }}
-      >
-        {t("contact.expect", lang)}
-      </h2>
-      <div className="mt-3 space-y-3 text-sm text-secondary">
-        {c.process.map((step: string, i: number) => (
-          <div key={i}>{step}</div>
-        ))}
-      </div>
-    </div>
-  ) : null;
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -307,10 +286,8 @@ export function ContactPageClient({
         </div>
 
         {/* Formulář */}
-        {(show("form") || processPanel) && (
+        {show("form") && (
         <div className="space-y-6" id={CONTACT_FORM_ID} style={{ scrollMarginTop: "190px" }}>
-          {show("form") && (
-          <>
           {sent ? (
             <div className="card-panel p-6 flex flex-col items-center justify-center text-center reveal-on-scroll reveal-on-scroll--delay">
               <div style={{ fontSize: "48px", marginBottom: "16px" }}>✓</div>
@@ -390,10 +367,6 @@ export function ContactPageClient({
             </div>
           </form>
           )}
-          </>
-          )}
-
-          {processPanel}
         </div>
         )}
       </section>
