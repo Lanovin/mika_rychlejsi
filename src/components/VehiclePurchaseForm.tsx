@@ -36,6 +36,7 @@ export function VehiclePurchaseForm() {
     owners: "",
     origin: "",
     crashed: "",
+    vatDeduction: "",
     transmission: "",
     vin: "",
     stkDay: "",
@@ -89,6 +90,7 @@ export function VehiclePurchaseForm() {
       form.owners ? `Počet majitelů: ${form.owners}` : "",
       form.origin ? `Původ vozu: ${form.origin}` : "",
       form.crashed ? `Havarováno: ${form.crashed}` : "",
+      form.vatDeduction ? `Odpočet DPH: ${form.vatDeduction}` : "",
       form.transmission ? `Převodovka: ${form.transmission}` : "",
       form.vin ? `VIN: ${form.vin}` : "",
       form.stkDay || form.stkMonth || form.stkYear
@@ -710,6 +712,40 @@ export function VehiclePurchaseForm() {
                   value={opt.value}
                   checked={form.crashed === opt.value}
                   onChange={() => set("crashed", opt.value)}
+                  style={{ display: "none" }}
+                />
+                {opt.label}
+              </label>
+            ))}
+          </div>
+        </div>
+
+        {/* VAT deduction */}
+        <div style={sectionStyle}>
+          <label style={labelStyle}>{t("vykup.vatDeduction", lang)}</label>
+          <div style={{ display: "flex", gap: "12px", marginTop: "8px" }}>
+            {[{ value: t("vykup.yes", lang), label: t("vykup.yes", lang) }, { value: t("vykup.no", lang), label: t("vykup.no", lang) }].map((opt) => (
+              <label
+                key={opt.value}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  padding: "10px 20px",
+                  fontSize: "14px",
+                  border: `1px solid ${form.vatDeduction === opt.value ? "var(--gold-dim)" : "var(--black-border)"}`,
+                  background: form.vatDeduction === opt.value ? "rgba(201,168,76,0.08)" : "var(--black-card)",
+                  color: form.vatDeduction === opt.value ? "var(--gold)" : "var(--cream-muted)",
+                  cursor: "pointer",
+                  transition: "all 0.15s",
+                }}
+              >
+                <input
+                  type="radio"
+                  name="vatDeduction"
+                  value={opt.value}
+                  checked={form.vatDeduction === opt.value}
+                  onChange={() => set("vatDeduction", opt.value)}
                   style={{ display: "none" }}
                 />
                 {opt.label}

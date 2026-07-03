@@ -268,6 +268,7 @@ const translations: Record<string, Record<Lang, string>> = {
   "color.jina": { cs: "Jiná", en: "Other" },
   "vykup.origin": { cs: "Původ vozu", en: "Vehicle Origin" },
   "vykup.crashed": { cs: "Bylo vozidlo v minulosti havarováno?", en: "Was the vehicle previously in an accident?" },
+  "vykup.vatDeduction": { cs: "Možnost odpočtu DPH?", en: "VAT deduction available?" },
   "vykup.yes": { cs: "Ano", en: "Yes" },
   "vykup.no": { cs: "Ne", en: "No" },
   "vykup.transmission": { cs: "Převodovka", en: "Transmission" },
