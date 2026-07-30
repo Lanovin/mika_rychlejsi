@@ -71,7 +71,7 @@ export function LoginPageClient({
                 type="text"
                 required
                 autoComplete="username"
-                className="mt-1 w-full"
+                className="login-input mt-1 w-full"
               />
             </div>
             <div>
@@ -83,7 +83,7 @@ export function LoginPageClient({
                 type="password"
                 required
                 autoComplete="current-password"
-                className="mt-1 w-full"
+                className="login-input mt-1 w-full"
               />
             </div>
             <button type="submit" className="btn-primary w-full">

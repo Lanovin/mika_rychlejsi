@@ -1,12 +1,13 @@
 // Katalog značek a modelů pro oceňovací formulář výkupu.
-// Pořadí značek: nejprodávanější na českém trhu nahoře, zbytek abecedně.
+// Značky se exportují seřazené abecedně (česká abeceda), aby se v seznamu
+// dobře hledalo.
 
 export interface CarBrand {
   brand: string;
   models: string[];
 }
 
-export const carCatalog: CarBrand[] = [
+const brands: CarBrand[] = [
   {
     brand: "Škoda",
     models: ["Fabia", "Octavia", "Superb", "Scala", "Kamiq", "Karoq", "Kodiaq", "Enyaq", "Rapid", "Citigo", "Yeti", "Roomster", "Felicia"],
@@ -212,3 +213,9 @@ export const carCatalog: CarBrand[] = [
     models: ["G70", "G80", "G90", "GV70", "GV80"],
   },
 ];
+
+const brandCollator = new Intl.Collator("cs", { sensitivity: "base", numeric: true });
+
+export const carCatalog: CarBrand[] = [...brands].sort((a, b) =>
+  brandCollator.compare(a.brand, b.brand)
+);

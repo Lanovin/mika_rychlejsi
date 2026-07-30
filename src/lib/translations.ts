@@ -276,6 +276,7 @@ const translations: Record<string, Record<Lang, string>> = {
   "vykup.manual": { cs: "Manuální", en: "Manual" },
   "vykup.selectTransmission": { cs: "Vyberte převodovku", en: "Select transmission" },
   "vykup.vin": { cs: "VIN vozu", en: "Vehicle VIN" },
+  "vykup.vinPlaceholder": { cs: "Např. TMBJJ7NE0F0123456", en: "e.g. TMBJJ7NE0F0123456" },
   "vykup.thankYou": { cs: "Děkujeme za odeslání", en: "Thank You for Submitting" },
   "vykup.thankYouDesc": { cs: "Váš formulář byl odeslán. Ozveme se vám co nejdříve s oceněním vašeho vozu.", en: "Your form has been submitted. We will get back to you with a vehicle valuation as soon as possible." },
 

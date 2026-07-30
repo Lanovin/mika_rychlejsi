@@ -4,14 +4,60 @@ import { useRef, useState, type FormEvent, type ChangeEvent } from "react";
 import { useLanguage } from "@/src/lib/LanguageContext";
 import { t } from "@/src/lib/translations";
 import { carCatalog } from "@/src/data/car-catalog";
+import {
+  equipmentGroups,
+  equipmentLabelsCs,
+  getEquipmentItem,
+  quickEquipmentIds,
+} from "@/src/data/vehicle-equipment";
+import { compressImages } from "@/src/lib/image-compress";
 
 const OTHER_VALUE = "__other__";
+const MAX_PHOTOS = 20;
+/** Rozpočet pro přílohy e-mailu po zmenšení fotek. */
+const MAX_PHOTOS_TOTAL_BYTES = 4 * 1024 * 1024;
+
+function EquipmentChip({
+  label,
+  selected,
+  onToggle,
+}: {
+  label: string;
+  selected: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <label
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: "6px",
+        padding: "6px 12px",
+        fontSize: "13px",
+        border: `1px solid ${selected ? "var(--gold-dim)" : "var(--black-border)"}`,
+        background: selected ? "rgba(201,168,76,0.08)" : "var(--black-card)",
+        color: selected ? "var(--gold)" : "var(--cream-muted)",
+        cursor: "pointer",
+        transition: "all 0.15s",
+      }}
+    >
+      <input
+        type="checkbox"
+        checked={selected}
+        onChange={onToggle}
+        style={{ display: "none" }}
+      />
+      {label}
+    </label>
+  );
+}
 
 export function VehiclePurchaseForm() {
   const { lang } = useLanguage();
   const [submitted, setSubmitted] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
+  const [equipmentOpen, setEquipmentOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [form, setForm] = useState({
@@ -32,7 +78,7 @@ export function VehiclePurchaseForm() {
     powerKw: "",
     equipment: [] as string[],
     equipmentNote: "",
-    photos: null as FileList | null,
+    photos: [] as File[],
     owners: "",
     origin: "",
     crashed: "",
@@ -45,7 +91,7 @@ export function VehiclePurchaseForm() {
     gdpr: false,
   });
 
-  const set = (field: string, value: string | boolean | string[] | FileList | null) =>
+  const set = (field: string, value: string | boolean | string[] | File[]) =>
     setForm((prev) => ({ ...prev, [field]: value }));
 
   const setBrand = (value: string) =>
@@ -57,12 +103,41 @@ export function VehiclePurchaseForm() {
     ? form.modelOther
     : form.model;
 
-  const toggleEquipment = (item: string) => {
+  const toggleEquipment = (id: string) => {
     setForm((prev) => ({
       ...prev,
-      equipment: prev.equipment.includes(item)
-        ? prev.equipment.filter((e) => e !== item)
-        : [...prev.equipment, item],
+      equipment: prev.equipment.includes(id)
+        ? prev.equipment.filter((e) => e !== id)
+        : [...prev.equipment, id],
+    }));
+  };
+
+  const photoKey = (file: File) => `${file.name}-${file.size}-${file.lastModified}`;
+
+  // Prohlížeč při každém výběru nahradí obsah inputu, takže si soubory
+  // držíme ve stavu a nové výběry přidáváme k předchozím.
+  const addPhotos = (event: ChangeEvent<HTMLInputElement>) => {
+    const picked = Array.from(event.target.files ?? []);
+    // Reset umožní vybrat stejný soubor znovu poté, co ho uživatel odebral.
+    event.target.value = "";
+    if (!picked.length) return;
+
+    const known = new Set(form.photos.map(photoKey));
+    const added = picked.filter((file) => !known.has(photoKey(file)));
+    const merged = [...form.photos, ...added];
+
+    setError(merged.length > MAX_PHOTOS
+      ? (lang === "cs"
+        ? `Lze přiložit nejvýše ${MAX_PHOTOS} fotografií.`
+        : `You can attach at most ${MAX_PHOTOS} photos.`)
+      : "");
+    set("photos", merged.slice(0, MAX_PHOTOS));
+  };
+
+  const removePhoto = (file: File) => {
+    setForm((prev) => ({
+      ...prev,
+      photos: prev.photos.filter((item) => photoKey(item) !== photoKey(file)),
     }));
   };
 
@@ -92,27 +167,36 @@ export function VehiclePurchaseForm() {
       form.crashed ? `Havarováno: ${form.crashed}` : "",
       form.vatDeduction ? `Odpočet DPH: ${form.vatDeduction}` : "",
       form.transmission ? `Převodovka: ${form.transmission}` : "",
-      form.vin ? `VIN: ${form.vin}` : "",
+      `VIN: ${form.vin}`,
       form.stkDay || form.stkMonth || form.stkYear
         ? `STK do: ${form.stkDay}.${form.stkMonth}.${form.stkYear}`
         : "",
-      form.equipment.length ? `Výbava: ${form.equipment.join(", ")}` : "",
+      form.equipment.length ? `Výbava: ${equipmentLabelsCs(form.equipment).join(", ")}` : "",
       form.equipmentNote ? `Poznámka k výbavě: ${form.equipmentNote}` : "",
     ]
       .filter(Boolean)
       .join("\n");
 
     try {
+      const photos = await compressImages(form.photos);
+      const totalBytes = photos.reduce((sum, file) => sum + file.size, 0);
+      if (totalBytes > MAX_PHOTOS_TOTAL_BYTES) {
+        throw new Error(lang === "cs"
+          ? "Fotografie jsou dohromady příliš velké. Odeberte prosím některé a zkuste to znovu."
+          : "The photos are too large in total. Please remove some and try again.");
+      }
+
+      const payload = new FormData();
+      payload.append("name", form.name);
+      payload.append("email", form.email);
+      payload.append("phone", form.phone);
+      payload.append("message", lines);
+      payload.append("source", "vykup");
+      photos.forEach((file) => payload.append("photos", file, file.name));
+
       const res = await fetch("/api/contact", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: form.name,
-          email: form.email,
-          phone: form.phone,
-          message: lines,
-          source: "vykup",
-        }),
+        body: payload,
       });
       if (!res.ok) {
         const data = await res.json().catch(() => null);
@@ -125,10 +209,6 @@ export function VehiclePurchaseForm() {
       setSending(false);
     }
   };
-
-  const equipmentOptions = lang === "cs"
-    ? ["Klimatizace", "Navigace", "Kožené sedačky", "Vyhřívaná sedadla", "Tempomat", "Parkovací senzory", "Kamera", "Střešní okno", "Xenon/LED světla", "Tažné zařízení"]
-    : ["Air conditioning", "Navigation", "Leather seats", "Heated seats", "Cruise control", "Parking sensors", "Camera", "Sunroof", "Xenon/LED lights", "Tow bar"];
 
   const bodyOptions = [
     { value: "sedan", label: t("vykup.sedan", lang) },
@@ -185,10 +265,18 @@ export function VehiclePurchaseForm() {
       : "inset 0 0 0 1px rgba(255, 255, 255, 0.03)";
   };
 
-  const selectedPhotoNames = Array.from(form.photos ?? []).map((file) => file.name);
-  const photoSummary = selectedPhotoNames.length
-    ? (lang === "cs" ? `Vybráno souborů: ${selectedPhotoNames.length}` : `Selected files: ${selectedPhotoNames.length}`)
+  const photoSummary = form.photos.length
+    ? (lang === "cs" ? `Vybráno souborů: ${form.photos.length}` : `Selected files: ${form.photos.length}`)
     : (lang === "cs" ? "Nevybrali jste žádné soubory" : "No files selected");
+
+  // Ve sbaleném stavu ukazujeme jen nejčastější výbavu plus to, co už je vybrané,
+  // aby uživatel po sbalení neztratil přehled o svém výběru.
+  const collapsedEquipmentIds = [
+    ...quickEquipmentIds,
+    ...form.equipment.filter((id) => !quickEquipmentIds.includes(id)),
+  ];
+  const totalEquipmentCount = equipmentGroups.reduce((sum, group) => sum + group.items.length, 0);
+  const hiddenEquipmentCount = totalEquipmentCount - collapsedEquipmentIds.length;
 
   const inputStyle: React.CSSProperties = {
     width: "100%",
@@ -559,34 +647,84 @@ export function VehiclePurchaseForm() {
 
         {/* Equipment */}
         <div style={sectionStyle}>
-          <label style={labelStyle}>{t("vykup.equipment", lang)}</label>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginTop: "4px" }}>
-            {equipmentOptions.map((item) => (
-              <label
-                key={item}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  padding: "6px 12px",
-                  fontSize: "13px",
-                  border: `1px solid ${form.equipment.includes(item) ? "var(--gold-dim)" : "var(--black-border)"}`,
-                  background: form.equipment.includes(item) ? "rgba(201,168,76,0.08)" : "var(--black-card)",
-                  color: form.equipment.includes(item) ? "var(--gold)" : "var(--cream-muted)",
-                  cursor: "pointer",
-                  transition: "all 0.15s",
-                }}
-              >
-                <input
-                  type="checkbox"
-                  checked={form.equipment.includes(item)}
-                  onChange={() => toggleEquipment(item)}
-                  style={{ display: "none" }}
-                />
-                {item}
-              </label>
-            ))}
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "baseline", gap: "8px" }}>
+            <label style={{ ...labelStyle, marginBottom: 0 }}>{t("vykup.equipment", lang)}</label>
+            {form.equipment.length > 0 && (
+              <span style={{ fontSize: "12px", color: "var(--cream-muted)" }}>
+                {lang === "cs"
+                  ? `vybráno: ${form.equipment.length}`
+                  : `selected: ${form.equipment.length}`}
+              </span>
+            )}
           </div>
+
+          {equipmentOpen ? (
+            <div style={{ display: "grid", gap: "16px", marginTop: "12px" }}>
+              {equipmentGroups.map((group) => (
+                <div key={group.id}>
+                  <div
+                    style={{
+                      fontSize: "11px",
+                      fontWeight: 600,
+                      letterSpacing: "0.15em",
+                      textTransform: "uppercase",
+                      color: "var(--cream-muted)",
+                      marginBottom: "8px",
+                    }}
+                  >
+                    {lang === "cs" ? group.cs : group.en}
+                  </div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                    {group.items.map((item) => (
+                      <EquipmentChip
+                        key={item.id}
+                        label={lang === "cs" ? item.cs : item.en}
+                        selected={form.equipment.includes(item.id)}
+                        onToggle={() => toggleEquipment(item.id)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginTop: "12px" }}>
+              {collapsedEquipmentIds.map((id) => {
+                const item = getEquipmentItem(id);
+                if (!item) return null;
+                return (
+                  <EquipmentChip
+                    key={item.id}
+                    label={lang === "cs" ? item.cs : item.en}
+                    selected={form.equipment.includes(item.id)}
+                    onToggle={() => toggleEquipment(item.id)}
+                  />
+                );
+              })}
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={() => setEquipmentOpen((open) => !open)}
+            style={{
+              marginTop: "12px",
+              padding: "8px 16px",
+              fontSize: "13px",
+              fontWeight: 600,
+              border: "1px dashed var(--gold-dim)",
+              background: "transparent",
+              color: "var(--gold)",
+              cursor: "pointer",
+              transition: "background 0.15s, border-color 0.15s",
+            }}
+          >
+            {equipmentOpen
+              ? (lang === "cs" ? "Sbalit výbavu" : "Collapse equipment")
+              : (lang === "cs"
+                ? `+ Přidat další výbavu (${hiddenEquipmentCount})`
+                : `+ Add more equipment (${hiddenEquipmentCount})`)}
+          </button>
         </div>
 
         {/* Equipment note */}
@@ -615,7 +753,7 @@ export function VehiclePurchaseForm() {
             type="file"
             multiple
             accept="image/*"
-            onChange={(e: ChangeEvent<HTMLInputElement>) => set("photos", e.target.files)}
+            onChange={addPhotos}
             style={{ display: "none" }}
           />
           <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", alignItems: "center", marginTop: "8px" }}>
@@ -625,26 +763,47 @@ export function VehiclePurchaseForm() {
               style={{ width: "auto", minWidth: "190px" }}
               onClick={() => fileInputRef.current?.click()}
             >
-              {lang === "cs" ? "Vybrat soubory" : "Choose files"}
+              {form.photos.length
+                ? (lang === "cs" ? "Přidat další fotky" : "Add more photos")
+                : (lang === "cs" ? "Vybrat soubory" : "Choose files")}
             </button>
-            <span style={{ fontSize: "13px", color: selectedPhotoNames.length ? "var(--cream)" : "var(--cream-muted)" }}>
+            <span style={{ fontSize: "13px", color: form.photos.length ? "var(--cream)" : "var(--cream-muted)" }}>
               {photoSummary}
             </span>
           </div>
-          {selectedPhotoNames.length > 0 && (
+          {form.photos.length > 0 && (
             <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginTop: "12px" }}>
-              {selectedPhotoNames.map((name) => (
+              {form.photos.map((file) => (
                 <span
-                  key={name}
+                  key={photoKey(file)}
                   style={{
-                    padding: "6px 10px",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    padding: "6px 8px 6px 10px",
                     fontSize: "12px",
                     color: "var(--cream)",
                     border: "1px solid rgba(201, 168, 76, 0.28)",
                     background: "rgba(201, 168, 76, 0.1)",
                   }}
                 >
-                  {name}
+                  {file.name}
+                  <button
+                    type="button"
+                    onClick={() => removePhoto(file)}
+                    aria-label={lang === "cs" ? `Odebrat ${file.name}` : `Remove ${file.name}`}
+                    style={{
+                      border: "none",
+                      background: "transparent",
+                      color: "var(--gold)",
+                      cursor: "pointer",
+                      fontSize: "14px",
+                      lineHeight: 1,
+                      padding: "0 2px",
+                    }}
+                  >
+                    ×
+                  </button>
                 </span>
               ))}
             </div>
@@ -790,11 +949,15 @@ export function VehiclePurchaseForm() {
 
         {/* VIN */}
         <div style={sectionStyle}>
-          <label style={labelStyle}>{t("vykup.vin", lang)}</label>
+          <label style={labelStyle}>
+            {t("vykup.vin", lang)} <span style={{ color: "var(--gold-light)" }}>*</span>
+          </label>
           <input
             type="text"
+            required
             value={form.vin}
-            onChange={(e) => set("vin", e.target.value)}
+            onChange={(e) => set("vin", e.target.value.toUpperCase())}
+            placeholder={t("vykup.vinPlaceholder", lang)}
             style={inputStyle}
             onFocus={(e) => setFieldFocusState(e.currentTarget, true)}
             onBlur={(e) => setFieldFocusState(e.currentTarget, false)}

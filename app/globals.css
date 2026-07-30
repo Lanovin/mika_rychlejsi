@@ -891,6 +891,7 @@ input[type="text"],
 input[type="email"],
 input[type="tel"],
 input[type="number"],
+input[type="password"],
 select,
 textarea {
   background: var(--black-rich);
@@ -909,6 +910,35 @@ input:focus,
 select:focus,
 textarea:focus {
   border-color: var(--gold-dim);
+}
+
+/* Přihlášení do administrace – světlá pole, aby byl text i tečky hesla čitelné. */
+input.login-input,
+input.login-input[type="text"],
+input.login-input[type="password"] {
+  background: #ffffff;
+  border: 1px solid #cfcfcf;
+  color: #111111;
+  caret-color: #111111;
+  -webkit-text-fill-color: #111111;
+}
+
+input.login-input::placeholder {
+  color: #7a7a7a;
+}
+
+input.login-input:focus {
+  border-color: var(--gold-dim);
+  box-shadow: 0 0 0 2px rgba(201, 168, 76, 0.25);
+}
+
+/* Autofill v Chrome jinak přebije bílé pozadí modrou/žlutou výplní. */
+input.login-input:-webkit-autofill,
+input.login-input:-webkit-autofill:hover,
+input.login-input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #111111;
+  caret-color: #111111;
+  box-shadow: 0 0 0 1000px #ffffff inset;
 }
 
 input[type="checkbox"] {

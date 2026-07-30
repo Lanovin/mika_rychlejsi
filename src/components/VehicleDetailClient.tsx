@@ -724,9 +724,9 @@ export function VehicleDetailClient({ car }: { car: Vehicle }) {
             <a href="tel:+420774333774" className="btn-primary w-full py-3 text-center">
               {t("detail.callSeller", lang)}
             </a>
-            <a href={`/kontakt?car=${car.id}`} className="btn-secondary w-full py-3 text-center">
+            <Link href={`/kontakt?car=${car.id}`} className="btn-secondary w-full py-3 text-center">
               {t("detail.bookViewing", lang)}
-            </a>
+            </Link>
           </div>
           <div style={{ background: "var(--black-rich)", border: "1px solid var(--black-border)", padding: "16px" }}>
             <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--white)" }}>
@@ -784,9 +784,9 @@ export function VehicleDetailClient({ car }: { car: Vehicle }) {
           <a href="tel:+420774333774" className="btn-primary w-full text-center" style={{ padding: "10px 8px", fontSize: "10px", letterSpacing: "0.15em" }}>
             {t("detail.callSeller", lang)}
           </a>
-          <a href={`/kontakt?car=${car.id}`} className="btn-secondary w-full text-center" style={{ padding: "10px 8px", fontSize: "10px", letterSpacing: "0.15em" }}>
+          <Link href={`/kontakt?car=${car.id}`} className="btn-secondary w-full text-center" style={{ padding: "10px 8px", fontSize: "10px", letterSpacing: "0.15em" }}>
             {t("detail.bookViewing", lang)}
-          </a>
+          </Link>
         </div>
 
         {/* Trade-in / financing */}
