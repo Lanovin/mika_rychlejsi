@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { useLanguage } from "@/src/lib/LanguageContext";
 import { t } from "@/src/lib/translations";
+import { VehicleImage } from "@/src/components/VehicleImage";
 
 interface VehicleRow {
   id: string;
@@ -125,12 +125,13 @@ export function AdminDashboardClient({
                     <div className="flex items-center gap-3">
                       {vehicle.imageUrl && (
                         <div className="relative h-12 w-16 flex-shrink-0 overflow-hidden" style={{ background: "var(--black-rich)" }}>
-                          <Image
+                          <VehicleImage
                             src={vehicle.imageUrl}
                             alt={vehicle.title}
-                            fill
+                            variant="thumb"
                             className="object-cover"
                             sizes="64px"
+                            loading="lazy"
                           />
                         </div>
                       )}

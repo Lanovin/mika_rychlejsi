@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, Calendar, Gauge } from "lucide-react";
 import type { Vehicle } from "@/src/lib/vehicle-types";
 import { useLanguage } from "@/src/lib/LanguageContext";
 import { t, tReplace } from "@/src/lib/translations";
+import { VehicleImage } from "@/src/components/VehicleImage";
 
 interface HeroSliderProps {
   vehicles: Vehicle[];
@@ -87,15 +87,15 @@ export function HeroSlider({ vehicles }: HeroSliderProps) {
             aria-hidden={i !== current}
           >
             <div className={`hero-slider__img-wrap ${i === current ? "hero-slider__img-wrap--zoom" : ""}`}>
-              <Image
+              <VehicleImage
                 src={slidecar.imageUrl || "/placeholder-car.jpg"}
                 alt={slidecar.title}
-                fill
                 sizes="(max-width: 768px) 100vw, 50vw"
                 style={{ objectFit: "cover" }}
                 priority={i === 0}
                 loading={i === 0 ? undefined : "lazy"}
                 fetchPriority={i === 0 ? "high" : "low"}
+                fallbackLabel={slidecar.title}
               />
             </div>
             <span className="hero-slider__counter">

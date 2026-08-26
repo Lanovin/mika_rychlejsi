@@ -14,8 +14,12 @@ import { compressImages } from "@/src/lib/image-compress";
 
 const OTHER_VALUE = "__other__";
 const MAX_PHOTOS = 20;
-/** Rozpočet pro přílohy e-mailu po zmenšení fotek. */
-const MAX_PHOTOS_TOTAL_BYTES = 4 * 1024 * 1024;
+/**
+ * Rozpočet na fotky po zmenšení. Serverless funkce přijme request do 4,5 MB,
+ * zbytek necháváme na textová pole a hlavičky multipartu. Fotky se zmenšují
+ * adaptivně, takže se do rozpočtu vejde plný počet snímků.
+ */
+const MAX_PHOTOS_TOTAL_BYTES = 3.6 * 1024 * 1024;
 
 function EquipmentChip({
   label,
@@ -56,6 +60,7 @@ export function VehiclePurchaseForm() {
   const { lang } = useLanguage();
   const [submitted, setSubmitted] = useState(false);
   const [sending, setSending] = useState(false);
+  const [compressing, setCompressing] = useState<{ done: number; total: number } | null>(null);
   const [error, setError] = useState("");
   const [equipmentOpen, setEquipmentOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -178,12 +183,19 @@ export function VehiclePurchaseForm() {
       .join("\n");
 
     try {
-      const photos = await compressImages(form.photos);
+      const photos = form.photos.length
+        ? await compressImages(form.photos, {
+          totalBudgetBytes: MAX_PHOTOS_TOTAL_BYTES,
+          onProgress: (done, total) => setCompressing({ done, total }),
+        })
+        : [];
+      setCompressing(null);
+
       const totalBytes = photos.reduce((sum, file) => sum + file.size, 0);
       if (totalBytes > MAX_PHOTOS_TOTAL_BYTES) {
         throw new Error(lang === "cs"
-          ? "Fotografie jsou dohromady příliš velké. Odeberte prosím některé a zkuste to znovu."
-          : "The photos are too large in total. Please remove some and try again.");
+          ? "Fotografie se nepodařilo dostatečně zmenšit. Odeberte prosím některé a zkuste to znovu."
+          : "The photos could not be shrunk enough. Please remove some and try again.");
       }
 
       const payload = new FormData();
@@ -206,6 +218,7 @@ export function VehiclePurchaseForm() {
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Odeslání se nezdařilo");
     } finally {
+      setCompressing(null);
       setSending(false);
     }
   };
@@ -266,8 +279,12 @@ export function VehiclePurchaseForm() {
   };
 
   const photoSummary = form.photos.length
-    ? (lang === "cs" ? `Vybráno souborů: ${form.photos.length}` : `Selected files: ${form.photos.length}`)
-    : (lang === "cs" ? "Nevybrali jste žádné soubory" : "No files selected");
+    ? (lang === "cs"
+      ? `Vybráno souborů: ${form.photos.length} z ${MAX_PHOTOS}`
+      : `Selected files: ${form.photos.length} of ${MAX_PHOTOS}`)
+    : (lang === "cs"
+      ? `Nevybrali jste žádné soubory (můžete jich přiložit až ${MAX_PHOTOS})`
+      : `No files selected (you can attach up to ${MAX_PHOTOS})`);
 
   // Ve sbaleném stavu ukazujeme jen nejčastější výbavu plus to, co už je vybrané,
   // aby uživatel po sbalení neztratil přehled o svém výběru.
@@ -1046,7 +1063,13 @@ export function VehiclePurchaseForm() {
           <p style={{ color: "#ef4444", fontSize: "14px", margin: 0 }}>{error}</p>
         )}
         <button type="submit" className="btn-primary" style={{ width: "100%", marginTop: "8px" }} disabled={sending}>
-          {sending ? (lang === "cs" ? "Odesílání…" : "Sending…") : t("vykup.send", lang)}
+          {compressing
+            ? (lang === "cs"
+              ? `Připravuji fotky… ${compressing.done}/${compressing.total}`
+              : `Preparing photos… ${compressing.done}/${compressing.total}`)
+            : sending
+              ? (lang === "cs" ? "Odesílání…" : "Sending…")
+              : t("vykup.send", lang)}
         </button>
       </form>
     </div>

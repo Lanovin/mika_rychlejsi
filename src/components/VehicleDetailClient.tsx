@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef, useMemo, type FormEvent } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, X, ZoomIn, Gauge, Fuel, CalendarRange, Settings2 } from "lucide-react";
 import { useLanguage } from "@/src/lib/LanguageContext";
 import { t, tReplace } from "@/src/lib/translations";
 import type { Vehicle } from "@/src/lib/vehicle-types";
+import { VehicleImage } from "@/src/components/VehicleImage";
 
 export function VehicleDetailClient({ car }: { car: Vehicle }) {
   const { lang } = useLanguage();
@@ -238,13 +238,14 @@ export function VehicleDetailClient({ car }: { car: Vehicle }) {
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
           >
-            <Image
+            <VehicleImage
               src={allImages[selectedIdx]}
               alt={`${car.make} ${car.model} ${selectedIdx + 1}`}
-              fill
+              variant="full"
               className="object-contain"
               sizes="100vw"
               priority
+              fallbackLabel={lang === "cs" ? "Fotografii se nepodařilo načíst" : "The photo could not be loaded"}
             />
           </div>
         </div>
@@ -307,13 +308,13 @@ export function VehicleDetailClient({ car }: { car: Vehicle }) {
               onTouchEnd={handleTouchEnd}
             >
               {allImages.length > 0 ? (
-                <Image
+                <VehicleImage
                   src={allImages[selectedIdx]}
                   alt={`${car.make} ${car.model}`}
-                  fill
                   className="object-cover transition-opacity duration-300"
                   sizes="(min-width: 1024px) 60vw, 100vw"
                   priority
+                  fallbackLabel={lang === "cs" ? "Fotografii se nepodařilo načíst" : "The photo could not be loaded"}
                 />
               ) : (
                 <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--cream-muted)", fontSize: "14px" }}>
@@ -322,16 +323,16 @@ export function VehicleDetailClient({ car }: { car: Vehicle }) {
               )}
               {/* Preload adjacent images — client-only to avoid hydration mismatch */}
               {mounted && preloadIndices.map(i => (
-                <Image
+                <VehicleImage
                   key={`preload-${i}`}
                   src={allImages[i]}
                   alt=""
-                  fill
                   className="object-cover"
                   style={{ opacity: 0, pointerEvents: "none" }}
                   sizes="(min-width: 1024px) 60vw, 100vw"
-                  priority
-                  aria-hidden="true"
+                  loading="eager"
+                  fetchPriority="low"
+                  aria-hidden
                 />
               ))}
               <div
@@ -488,12 +489,13 @@ export function VehicleDetailClient({ car }: { car: Vehicle }) {
                     onMouseLeave={(e) => { if (index !== selectedIdx) e.currentTarget.style.opacity = "0.6"; }}
                     aria-label={`Photo ${index + 1}`}
                   >
-                    <Image
+                    <VehicleImage
                       src={image}
                       alt={`${car.make} ${car.model} ${index + 1}`}
-                      fill
+                      variant="thumb"
                       className="object-cover"
                       sizes="80px"
+                      loading="lazy"
                     />
                   </button>
                 ))}

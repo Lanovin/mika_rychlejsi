@@ -1,9 +1,9 @@
-import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Fuel, Gauge, CalendarRange } from "lucide-react";
 import type { Vehicle } from "@/src/lib/vehicle-types";
 import { useLanguage } from "@/src/lib/LanguageContext";
 import { t, tReplace } from "@/src/lib/translations";
+import { VehicleImage } from "@/src/components/VehicleImage";
 
 interface VehicleCardProps {
   car: Vehicle;
@@ -40,15 +40,16 @@ export function VehicleCard({ car }: VehicleCardProps) {
         {/* Image */}
         <div className="vehicle-card__img-wrap">
           {car.imageUrl ? (
-            <Image
+            <VehicleImage
               src={car.imageUrl}
               alt={`${car.make} ${car.model}`}
-              fill
               className="object-cover transition-transform duration-500 group-hover:scale-105"
               sizes="(min-width: 1024px) 25vw, (min-width: 768px) 33vw, 50vw"
+              fallbackLabel={t("card.noPhoto", lang)}
+              fallbackClassName="vehicle-card__no-img"
             />
           ) : (
-            <div className="vehicle-card__no-img">Bez fotky</div>
+            <div className="vehicle-card__no-img">{t("card.noPhoto", lang)}</div>
           )}
           {car.featured ? (
             <div className="vehicle-card__badge">
