@@ -53,6 +53,32 @@ export function VehicleDetailClient({ car }: { car: Vehicle }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
 
+  // Spodní lišta s cenou a CTA je fixní přes celou šířku. Hlásíme její výšku
+  // do body, aby se nad ni odsunula plovoucí tlačítka WhatsApp a Instagram
+  // a nepřekrývala ji. Na desktopu je lišta skrytá, takže vyjde 0.
+  const ctaBarRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const bar = ctaBarRef.current;
+    if (!bar) return;
+
+    const { body } = document;
+    body.classList.add("has-bottom-bar");
+
+    const sync = () => {
+      body.style.setProperty("--bottom-bar-height", `${bar.offsetHeight}px`);
+    };
+    sync();
+
+    const observer = new ResizeObserver(sync);
+    observer.observe(bar);
+
+    return () => {
+      observer.disconnect();
+      body.classList.remove("has-bottom-bar");
+      body.style.removeProperty("--bottom-bar-height");
+    };
+  }, []);
+
   // Thumbnail strip scrollbar
   const thumbsRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef({ active: false, startX: 0, startScroll: 0 });
@@ -895,6 +921,7 @@ export function VehicleDetailClient({ car }: { car: Vehicle }) {
       </section>
 
       <div
+        ref={ctaBarRef}
         className="fixed inset-x-0 bottom-0 z-20 px-3 py-2 lg:hidden"
         style={{
           background: "rgba(22,22,22,0.97)",
@@ -903,24 +930,24 @@ export function VehicleDetailClient({ car }: { car: Vehicle }) {
         }}
       >
         <div className="flex items-center gap-2 max-w-[600px] mx-auto">
-          <div className="flex-shrink-0 mr-auto min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
+          {/* Cena se smí zúžit, jinak tlačítka vytlačí lištu mimo obrazovku. */}
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
               <div style={{ fontFamily: "var(--font-display)", fontSize: "16px", fontWeight: 600, color: "var(--gold-light)" }}>
                 {formattedPrice}
               </div>
               {vatDeductionText ? <div className="vat-badge vat-badge--compact">{vatDeductionText}</div> : null}
             </div>
             {priceWithoutVatText ? (
-              <div className="mt-0.5 text-[10px] leading-4 text-secondary">{priceWithoutVatText}</div>
+              <div className="mt-0.5 truncate text-[10px] leading-4 text-secondary">{priceWithoutVatText}</div>
             ) : null}
           </div>
-          <a href="tel:+420774333774" className="btn-secondary flex-shrink-0 px-3 py-2 text-[10px] text-center" style={{ letterSpacing: "0.12em" }}>
+          <a href="tel:+420774333774" className="btn-secondary btn-compact flex-shrink-0 text-center">
             {t("detail.call", lang)}
           </a>
           <a
             href={`/kontakt?car=${car.id}`}
-            className="btn-primary flex-shrink-0 px-3 py-2 text-[10px] text-center"
-            style={{ letterSpacing: "0.12em" }}
+            className="btn-primary btn-compact flex-shrink-0 text-center"
           >
             {t("detail.book", lang)}
           </a>

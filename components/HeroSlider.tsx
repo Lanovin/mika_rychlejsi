@@ -67,9 +67,9 @@ export function HeroSlider({ vehicles }: HeroSliderProps) {
     ? tReplace("vehicle.priceWithoutVat", lang, { price: formattedPriceWithoutVat })
     : null;
   const sliderTitle = getCompactHeroTitle(car);
-  const sliderPriceNote = vatDeductionText && priceWithoutVatText
-    ? `${vatDeductionText} • ${priceWithoutVatText}`
-    : (priceWithoutVatText ?? vatDeductionText);
+  // Držíme oba údaje odděleně, aby se na úzkém displeji zalomily po celých
+  // údajích a ne uprostřed částky.
+  const sliderPriceNotes = [vatDeductionText, priceWithoutVatText].filter(Boolean) as string[];
 
   return (
     <div
@@ -151,8 +151,12 @@ export function HeroSlider({ vehicles }: HeroSliderProps) {
         </div>
         <div className="hero-slider__price-col">
           <div className="hero-slider__price">{formattedPrice}</div>
-          {sliderPriceNote ? (
-            <div className="hero-slider__price-note">{sliderPriceNote}</div>
+          {sliderPriceNotes.length > 0 ? (
+            <div className="hero-slider__price-note">
+              {sliderPriceNotes.map((note) => (
+                <span key={note}>{note}</span>
+              ))}
+            </div>
           ) : null}
         </div>
       </Link>

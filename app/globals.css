@@ -558,27 +558,6 @@ a.topbar-item:hover {
   to   { opacity: 1; }
 }
 
-@media (max-width: 768px) {
-  .hero-slider__info {
-    padding: 10px 14px;
-    gap: 10px;
-  }
-  .hero-slider__title {
-    font-size: 14px;
-  }
-  .hero-slider__meta {
-    gap: 6px;
-  }
-  .hero-slider__meta-item {
-    font-size: 11px;
-  }
-  .hero-slider__price {
-    font-size: 15px;
-  }
-  .hero-slider__price-note {
-    font-size: 9px;
-  }
-}
 
 .hero-slider__title {
   font-family: var(--font-display);
@@ -624,7 +603,9 @@ a.topbar-item:hover {
 
 .hero-slider__price-col {
   margin-left: auto;
-  flex: 0 0 auto;
+  /* Smí se zmenšit – s `flex: 0 0 auto` cena přetékala přes okraj karty. */
+  flex: 0 1 auto;
+  min-width: 0;
   max-width: 50%;
   text-align: right;
 }
@@ -640,9 +621,70 @@ a.topbar-item:hover {
 
 .hero-slider__price-note {
   margin-top: 2px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: baseline;
+  gap: 0 6px;
   font-size: 10px;
   line-height: 1.4;
   color: var(--cream-muted);
+}
+
+/* Každý údaj drží pohromadě, takže se zalomí "Bez DPH 991 727 Kč"
+   jako celek a ne uprostřed částky. */
+.hero-slider__price-note > span {
+  white-space: nowrap;
+}
+
+/* Pozor na pořadí: tenhle blok musí zůstat AŽ ZA základními pravidly výše,
+   jinak ho základní pravidla se stejnou specificitou přebijí.
+
+   Na mobilu se název, parametry a cena nevejdou na jeden řádek – cena pak
+   vylézala ven z karty. Rozložíme je proto do mřížky: vlevo pod sebou název
+   a parametry, vpravo cena přes oba řádky. */
+@media (max-width: 768px) {
+  .hero-slider__info {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, auto);
+    align-items: center;
+    padding: 10px 14px;
+    row-gap: 3px;
+    column-gap: 10px;
+  }
+
+  .hero-slider__title {
+    grid-area: 1 / 1;
+    font-size: 14px;
+  }
+
+  .hero-slider__meta {
+    grid-area: 2 / 1;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .hero-slider__meta-item {
+    font-size: 11px;
+  }
+
+  .hero-slider__price-col {
+    grid-area: 1 / 2 / 3 / 3;
+    margin-left: 0;
+    max-width: none;
+  }
+
+  .hero-slider__price {
+    font-size: 15px;
+  }
+
+  /* Údaje o DPH pod sebou. Kdyby stály vedle sebe, jejich součet by
+     roztáhl pravý sloupec a vlevo by se ořízlo "58 787 km". */
+  .hero-slider__price-note {
+    flex-direction: column;
+    align-items: flex-end;
+    font-size: 9px;
+  }
 }
 
 .vat-badge {
@@ -783,26 +825,6 @@ a.topbar-item:hover {
   flex-wrap: wrap;
 }
 
-@media (max-width: 640px) {
-  .stats-bar {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .stats-bar > div + div {
-    border-left: none;
-  }
-
-  .stats-bar > div:nth-child(2) {
-    border-left: 1px solid var(--black-border);
-  }
-
-  .stats-bar > div:nth-child(n+3) {
-    grid-column: 1 / -1;
-    border-top: 1px solid var(--black-border);
-  }
-}
-
 .stats-bar > div {
   flex: 1;
   text-align: center;
@@ -811,6 +833,54 @@ a.topbar-item:hover {
 
 .stats-bar > div + div {
   border-left: 1px solid var(--black-border);
+}
+
+/* Pozor na pořadí: tenhle blok musí zůstat AŽ ZA základními pravidly výše.
+   Ma stejnou specificitu, takže výš v souboru by ho základní pravidla
+   přebila a na mobilu by zůstala svislá čárka i u prvku přes celou šířku. */
+@media (max-width: 640px) {
+  .stats-bar {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  /* Buňky zůstávají roztažené na výšku řádku (aby čárky šly celou výškou),
+     obsah v nich ale svisle vystředíme, ať dvojice působí vyváženě. */
+  .stats-bar > div {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 18px 10px;
+  }
+
+  /* Svislá čárka odděluje jen dvojici v prvním řádku. */
+  .stats-bar > div + div {
+    border-left: none;
+  }
+
+  .stats-bar > div:nth-child(2) {
+    border-left: 1px solid var(--black-border);
+  }
+
+  /* Ostatní se skládají pod sebe a dělí je vodorovná čárka přes celou šířku. */
+  .stats-bar > div:nth-child(n+3) {
+    grid-column: 1 / -1;
+    border-top: 1px solid var(--black-border);
+  }
+
+  /* Menší typografie, ať se "do 30 MINUT" nebo tříslovné popisky
+     nelámou přes tři řádky a bloky zůstanou podobně vysoké. */
+  .stats-bar .stat-value {
+    font-size: 26px;
+    letter-spacing: -0.04em;
+  }
+
+  .stats-bar .stat-label {
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    line-height: 1.5;
+    margin-top: 6px;
+  }
 }
 
 .stats-bar .stat-value {
@@ -1247,6 +1317,16 @@ select option {
   }
 }
 
+/* Kompaktní varianta do úzkých lišt (spodní CTA na detailu vozu). Vyšší
+   specificita než mobilní zvětšení výše, jinak by tlačítka lištu přetáhla. */
+.btn-primary.btn-compact,
+.btn-secondary.btn-compact {
+  padding: 10px 12px;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+}
+
 /* ─── Hero slider arrows ─────────────────────────── */
 
 .hero-slider__arrow {
@@ -1569,3 +1649,86 @@ select option {
 }
 
 
+/* ─── Plovoucí tlačítka (WhatsApp, Instagram) ──────────────────
+   Obě tlačítka sdílí jednu sadu proměnných, aby se jejich velikost ani
+   odsazení nemohly rozejít. Loga mají v PNG různě velký průhledný okraj
+   (WhatsApp vyplňuje 97 % plochy, Instagram jen 78 %), takže se dorovnávají
+   měřítkem na stejnou optickou velikost. */
+
+:root {
+  --floating-btn-size: 68px;
+  --floating-btn-gap: 16px;
+  --floating-btn-inset-x: 24px;
+  --floating-btn-inset-y: 24px;
+  /* Výška lišty, která si dole rezervuje místo (mobilní CTA na detailu vozu). */
+  --floating-btn-clearance: 0px;
+}
+
+@media (max-width: 768px) {
+  :root {
+    --floating-btn-size: 56px;
+    --floating-btn-gap: 12px;
+    --floating-btn-inset-x: 14px;
+    --floating-btn-inset-y: 14px;
+  }
+}
+
+/* Detail vozu má na mobilu spodní lištu s cenou a CTA – tlačítka nad ni,
+   ať nepřekrývají "Zavolat" a "Rezervovat". Výšku hlásí sama komponenta,
+   na desktopu je lišta skrytá a proměnná vyjde na 0. */
+body.has-bottom-bar {
+  --floating-btn-clearance: var(--bottom-bar-height, 0px);
+}
+
+.floating-action-btn {
+  position: fixed;
+  bottom: calc(
+    var(--floating-btn-inset-y) + var(--floating-btn-clearance) + env(safe-area-inset-bottom)
+  );
+  z-index: 35;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--floating-btn-size);
+  height: var(--floating-btn-size);
+  border-radius: 999px;
+  overflow: hidden;
+  text-decoration: none;
+  box-shadow: 0 14px 28px rgba(7, 23, 12, 0.42);
+  transition: transform 0.2s ease, filter 0.2s ease, bottom 0.2s ease;
+}
+
+.floating-action-btn:hover {
+  transform: translateY(-2px) scale(1.03);
+  filter: brightness(1.05);
+}
+
+.floating-action-btn__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Krajní tlačítko vpravo. */
+.floating-action-btn--first {
+  right: var(--floating-btn-inset-x);
+}
+
+/* Druhé sedí přesně o šířku prvního plus mezeru vlevo. */
+.floating-action-btn--second {
+  right: calc(var(--floating-btn-inset-x) + var(--floating-btn-size) + var(--floating-btn-gap));
+}
+
+.floating-action-btn--whatsapp .floating-action-btn__image {
+  transform: scale(1.03);
+}
+
+.floating-action-btn--instagram .floating-action-btn__image {
+  transform: scale(1.32);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .floating-action-btn {
+    transition: none;
+  }
+}
