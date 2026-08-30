@@ -9,9 +9,34 @@ const TIPCARS_URL =
 const PHOTO_ZDROJOVE = "https://img.tipcars.com/fotky_zdrojove/";
 const isVercelDeployment = process.env.VERCEL === "1" || Boolean(process.env.VERCEL_ENV);
 const configuredTimeout = Number.parseInt(process.env.TIPCARS_TIMEOUT_MS ?? "", 10);
+
+// Na Vercelu musí celé načtení stránky (feed + databáze + render) stihnout
+// limit funkce, proto je limit na pokus krátký. Dva pokusy se do něj vejdou.
 const TIPCARS_TIMEOUT_MS = Number.isFinite(configuredTimeout) && configuredTimeout > 0
   ? configuredTimeout
-  : (isVercelDeployment ? 4500 : 15000);
+  : (isVercelDeployment ? 3500 : 15000);
+const TIPCARS_ATTEMPTS = 2;
+const TIPCARS_RETRY_DELAY_MS = 250;
+
+// Server Tipcars je běžný Apache; požadavky bez rozumné identifikace
+// hostitelé rádi odmítají, tak se představíme.
+const TIPCARS_USER_AGENT = "MikaAutoWeb/1.0 (+https://www.mikaauto.cz)";
+
+/** Adresa bez query stringu – v logu nechceme přístupový token feedu. */
+function tipcarsUrlForLog() {
+  return TIPCARS_URL.split("?")[0];
+}
+
+function describeFetchError(err: unknown): string {
+  if (err instanceof Error) {
+    if (err.name === "AbortError" || err.name === "TimeoutError") {
+      return `vypršel limit ${TIPCARS_TIMEOUT_MS} ms`;
+    }
+    const code = (err as { cause?: { code?: string } }).cause?.code;
+    return code ? `${err.name}: ${err.message} (${code})` : `${err.name}: ${err.message}`;
+  }
+  return String(err);
+}
 
 function photoUrl(nazev: string): string {
   // nazev = "14544030_1.jpg" → need "fotky_zdrojove/14544030_1/0/x/x.jpg"
@@ -266,64 +291,89 @@ async function loadLocalInventory(): Promise<Vehicle[]> {
   }
 }
 
+/**
+ * Jeden pokus o stažení feedu.
+ *
+ * `clearTimeout` je záměrně až v `finally`: `fetch` se vrátí hned po
+ * hlavičkách, takže kdyby se limit rušil hned za ním, nehlídal by stahování
+ * těla (přes 900 kB XML) vůbec.
+ */
+async function fetchTipcarsXml(): Promise<string> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), TIPCARS_TIMEOUT_MS);
+
+  try {
+    const res = await fetch(TIPCARS_URL, {
+      next: { revalidate: 300 },
+      signal: controller.signal,
+      headers: { "User-Agent": TIPCARS_USER_AGENT },
+    });
+
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status} ${res.statusText}`);
+    }
+
+    const buffer = await res.arrayBuffer();
+    return new TextDecoder("windows-1250").decode(buffer);
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 export async function fetchTipcarsVehicles(): Promise<Vehicle[]> {
   const now = Date.now();
   if (cachedVehicles && now - cacheTimestamp < CACHE_TTL) {
     return cachedVehicles;
   }
 
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), TIPCARS_TIMEOUT_MS);
+  const startedAt = Date.now();
+  let lastReason = "neznámá chyba";
 
-    const res = await fetch(TIPCARS_URL, {
-      next: { revalidate: 300 },
-      signal: controller.signal,
-    });
-    clearTimeout(timeout);
+  for (let attempt = 1; attempt <= TIPCARS_ATTEMPTS; attempt += 1) {
+    try {
+      const xml = await fetchTipcarsXml();
 
-    if (!res.ok) {
-      console.error(`Tipcars fetch failed: ${res.status} ${res.statusText}`);
-      return cachedVehicles ?? await loadLocalInventory();
-    }
+      // Tipcars umí vrátit HTTP 200 a chybu až uvnitř XML – typicky kód 49,
+      // "XML export není pro tento přístup povolený".
+      const errorMsg = getTag(xml, "chyba");
+      if (errorMsg) {
+        const errorCode = getTag(xml, "chyba_kod");
+        lastReason = `Tipcars odpověděl chybou [${errorCode}]: ${errorMsg.trim()}`;
+        break; // Odpověď serveru; opakování nepomůže.
+      }
 
-    const buffer = await res.arrayBuffer();
+      const vehicles: Vehicle[] = [];
+      for (const block of getAllBlocks(xml, "car")) {
+        const vehicle = parseCarXml(block);
+        if (vehicle) {
+          vehicles.push(vehicle);
+        }
+      }
 
-    // Decode from windows-1250
-    const decoder = new TextDecoder("windows-1250");
-    const xml = decoder.decode(buffer);
+      if (vehicles.length === 0) {
+        lastReason = `feed se stáhl (${xml.length} znaků), ale neobsahoval žádný vůz`;
+        break; // Nejspíš změna formátu; opakování nepomůže.
+      }
 
-    // Detect Tipcars error responses (HTTP 200 but XML contains <chyba>)
-    const errorMsg = getTag(xml, "chyba");
-    if (errorMsg) {
-      const errorCode = getTag(xml, "chyba_kod");
-      console.error(
-        `Tipcars XML error [${errorCode}]: ${errorMsg.trim()} — falling back to local inventory`
-      );
-      return cachedVehicles ?? await loadLocalInventory();
-    }
-
-    const carBlocks = getAllBlocks(xml, "car");
-    const vehicles: Vehicle[] = [];
-
-    for (const block of carBlocks) {
-      const vehicle = parseCarXml(block);
-      if (vehicle) {
-        vehicles.push(vehicle);
+      cachedVehicles = vehicles;
+      cacheTimestamp = Date.now();
+      return vehicles;
+    } catch (err) {
+      lastReason = describeFetchError(err);
+      if (attempt < TIPCARS_ATTEMPTS) {
+        await new Promise((resolve) => setTimeout(resolve, TIPCARS_RETRY_DELAY_MS));
       }
     }
-
-    if (vehicles.length === 0) {
-      console.warn("Tipcars returned 0 vehicles, falling back to local inventory");
-      return cachedVehicles ?? await loadLocalInventory();
-    }
-
-    cachedVehicles = vehicles;
-    cacheTimestamp = now;
-
-    return vehicles;
-  } catch (err) {
-    console.error("Tipcars fetch error:", err);
-    return cachedVehicles ?? await loadLocalInventory();
   }
+
+  // Jediné místo, kde se hlásí propadnutí na zálohu – ať je v logu Vercelu
+  // hned vidět, proč se zobrazují záložní inzeráty.
+  console.error(
+    `[tipcars] Feed se nenačetl ani na ${TIPCARS_ATTEMPTS}. pokus`
+    + ` (${Date.now() - startedAt} ms, limit ${TIPCARS_TIMEOUT_MS} ms na pokus): ${lastReason}.`
+    + ` Zobrazuji ${cachedVehicles ? "poslední úspěšně načtená data" : "záložní data/inventory.json"}.`
+    + ` Zdroj: ${tipcarsUrlForLog()}`
+  );
+
+  return cachedVehicles ?? await loadLocalInventory();
 }
