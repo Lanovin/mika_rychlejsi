@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useMemo, useState, type CSSProperties } from "react";
 import { isTipcarsImage, tipcarsLoader, tipcarsVariant } from "@/src/lib/vehicle-images";
 
-type Variant = "auto" | "thumb" | "full";
+type Variant = "auto" | "thumb" | "card" | "full";
 
 interface Attempt {
   src: string;
@@ -17,7 +17,7 @@ interface VehicleImageProps {
   alt: string;
   /** Šířka obrázku v layoutu – řídí, kterou velikost si prohlížeč stáhne. */
   sizes: string;
-  /** "thumb" = pevný náhled, "full" = zdrojová fotka, "auto" = podle displeje. */
+  /** "thumb" = malý náhled, "card" = fotka do karty, "full" = zdrojová, "auto" = podle displeje. */
   variant?: Variant;
   className?: string;
   style?: CSSProperties;
@@ -32,6 +32,12 @@ interface VehicleImageProps {
 
 /** Pořadí pokusů: preferovaná velikost, pak čím dál konzervativnější náhrada. */
 function buildAttempts(src: string, variant: Variant): Attempt[] {
+  // Optimalizátor Next.js SVG odmítá (vrací 400), takže by první pokus vždy
+  // zbytečně selhal. Placeholder i loga se proto servírují rovnou.
+  if (/\.svg(\?|$)/i.test(src)) {
+    return [{ src, unoptimized: true, responsive: false }];
+  }
+
   if (!isTipcarsImage(src)) {
     return [
       { src, unoptimized: false, responsive: false },
@@ -43,6 +49,17 @@ function buildAttempts(src: string, variant: Variant): Attempt[] {
     return [
       { src: tipcarsVariant(src, "fotky_male"), unoptimized: true, responsive: false },
       { src: tipcarsVariant(src, "fotky_velke"), unoptimized: true, responsive: false },
+    ];
+  }
+
+  // Karta vozu je i na velkém monitoru nejvýš ~480 CSS px široká, takže
+  // `fotky_velke` (800 × 600) sedí při jakémkoli DPR. Pevná adresa navíc
+  // ušetří srcSet, který u Tipcars stejně nabízel jen tři skutečné velikosti
+  // rozepsané do osmi řádků – na výpisu 71 vozů zbytečné kilobajty v HTML.
+  if (variant === "card") {
+    return [
+      { src: tipcarsVariant(src, "fotky_velke"), unoptimized: true, responsive: false },
+      { src: tipcarsVariant(src, "fotky_zdrojove"), unoptimized: true, responsive: false },
     ];
   }
 

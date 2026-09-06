@@ -1,12 +1,12 @@
 import Link from "next/link";
-import { ArrowRight, Fuel, Gauge, CalendarRange } from "lucide-react";
-import type { Vehicle } from "@/src/lib/vehicle-types";
+import { VehicleIcon } from "@/src/components/VehicleCardIcons";
+import type { VehicleListItem } from "@/src/lib/vehicle-types";
 import { useLanguage } from "@/src/lib/LanguageContext";
 import { t, tReplace } from "@/src/lib/translations";
 import { VehicleImage } from "@/src/components/VehicleImage";
 
 interface VehicleCardProps {
-  car: Vehicle;
+  car: VehicleListItem;
 }
 
 export function VehicleCard({ car }: VehicleCardProps) {
@@ -43,6 +43,7 @@ export function VehicleCard({ car }: VehicleCardProps) {
             <VehicleImage
               src={car.imageUrl}
               alt={`${car.make} ${car.model}`}
+              variant="card"
               className="object-cover transition-transform duration-500 group-hover:scale-105"
               sizes="(min-width: 1024px) 25vw, (min-width: 768px) 33vw, 50vw"
               fallbackLabel={t("card.noPhoto", lang)}
@@ -76,15 +77,15 @@ export function VehicleCard({ car }: VehicleCardProps) {
           {/* Tech specs row */}
           <div className="vehicle-card__specs">
             <span className="vehicle-card__spec">
-              <Gauge className="vehicle-card__spec-icon" />
+              <VehicleIcon name="gauge" className="vehicle-card__spec-icon" />
               {car.powerKw}&nbsp;kW
             </span>
             <span className="vehicle-card__spec">
-              <CalendarRange className="vehicle-card__spec-icon" />
+              <VehicleIcon name="calendarRange" className="vehicle-card__spec-icon" />
               {formattedMileage}&nbsp;km
             </span>
             <span className="vehicle-card__spec">
-              <Fuel className="vehicle-card__spec-icon" />
+              <VehicleIcon name="fuel" className="vehicle-card__spec-icon" />
               {car.fuel}
             </span>
           </div>
@@ -102,7 +103,7 @@ export function VehicleCard({ car }: VehicleCardProps) {
             </div>
             <span className="vehicle-card__cta">
               {t("card.detail", lang)}
-              <ArrowRight className="vehicle-card__cta-arrow group-hover:translate-x-1" />
+              <VehicleIcon name="arrowRight" className="vehicle-card__cta-arrow group-hover:translate-x-1" />
             </span>
           </div>
         </div>

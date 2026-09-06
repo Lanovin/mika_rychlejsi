@@ -7,7 +7,7 @@ import { ArrowRight, ShieldCheck, CircleDollarSign, BadgeCheck } from "lucide-re
 import { VehicleCard } from "@/src/components/VehicleCard";
 import { HeroSlider } from "@/components/HeroSlider";
 import { BannerSlider } from "@/components/BannerSlider";
-import type { Vehicle } from "@/src/lib/vehicle-types";
+import type { VehicleListItem } from "@/src/lib/vehicle-types";
 import { useLanguage } from "@/src/lib/LanguageContext";
 import { t } from "@/src/lib/translations";
 
@@ -18,7 +18,12 @@ interface Banner {
 }
 
 interface HomePageClientProps {
-  vehicles: Vehicle[];
+  /** Vozy do hero slideru – server posílá jen ty, které se opravdu zobrazí. */
+  sliderCars: VehicleListItem[];
+  /** Karty do sekce „vybrané vozy“ – už seříznuté na maximum z CS/EN nastavení. */
+  featuredCars: VehicleListItem[];
+  /** Počet vozů v nabídce pro statistiku; celý seznam sem posílat nemusíme. */
+  vehicleCount: number;
   homepageMode?: string;
   banners?: Banner[];
   cs?: HomepageContent;
@@ -43,17 +48,24 @@ interface HomepageContent {
 
 const featureIcons = [ShieldCheck, CircleDollarSign, BadgeCheck];
 
-export function HomePageClient({ vehicles, homepageMode = "default", banners = [], cs, en }: HomePageClientProps) {
+export function HomePageClient({
+  sliderCars,
+  featuredCars,
+  vehicleCount,
+  homepageMode = "default",
+  banners = [],
+  cs,
+  en,
+}: HomePageClientProps) {
   const { lang } = useLanguage();
   const c = lang === "en" ? (en ?? cs) : (cs ?? en);
   const reviewByLabel = lang === "en" ? "Review by" : "Tuto recenzi napsal";
 
+  // Výběr vozů dělá server (app/page.tsx); tady se jen dořízne podle jazyka,
+  // protože počet karet je editovatelný zvlášť pro češtinu a angličtinu.
   const desktopCount = c?.featured.desktopCount ?? 4;
   const mobileCount = c?.featured.mobileCount ?? 3;
-  const featuredCars = vehicles.filter((vehicle) => vehicle.featured).slice(0, desktopCount);
-  const carsToRender = featuredCars.length > 0 ? featuredCars : vehicles.slice(0, desktopCount);
-  const featuredSlider = vehicles.filter((v) => v.featured && v.imageUrl);
-  const sliderCars = (featuredSlider.length > 0 ? featuredSlider : vehicles.filter((v) => v.imageUrl)).slice(0, 6);
+  const carsToRender = featuredCars.slice(0, desktopCount);
 
   const layout = c?._layout as string[] | undefined;
   const show = (key: string) => !layout || layout.includes(key);
@@ -136,7 +148,7 @@ export function HomePageClient({ vehicles, homepageMode = "default", banners = [
       <section className="container-page reveal-on-scroll" style={{ padding: '60px 40px 0' }}>
         <div className="stats-bar">
           <div>
-            <div className="stat-value">{vehicles.length}+</div>
+            <div className="stat-value">{vehicleCount}+</div>
             <div className="stat-label">{t('stats.vehicles', lang)}</div>
           </div>
           {(c?.stats ?? []).map((stat, i) => (

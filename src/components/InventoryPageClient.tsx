@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { ArrowUpDown, RotateCcw, SlidersHorizontal, X } from "lucide-react";
 import { VehicleCard } from "@/src/components/VehicleCard";
 import { SkeletonCard } from "@/src/components/SkeletonCard";
-import type { Vehicle } from "@/src/lib/vehicle-types";
+import type { VehicleListItem } from "@/src/lib/vehicle-types";
 import { useLanguage } from "@/src/lib/LanguageContext";
 import { t } from "@/src/lib/translations";
 
@@ -36,7 +36,7 @@ const INITIAL_FILTERS: InventoryFilters = {
 };
 
 interface InventoryPageClientProps {
-  vehicles: Vehicle[];
+  vehicles: VehicleListItem[];
   cs?: { kicker?: string; title?: string; subtitle?: string };
   en?: { kicker?: string; title?: string; subtitle?: string };
 }

@@ -1369,12 +1369,38 @@ select option {
 
 /* ─── Scroll reveal animation ─────────────────────── */
 
+/*
+ * Obsah se schovává jen tehdy, když v prohlížeči opravdu běží JavaScript –
+ * třídu `js` nastaví skript v <head> ještě před vykreslením. Bez toho
+ * (vypnutý JS, nedostupné bundly, blokující rozšíření) zůstal celý web
+ * neviditelný a tvářil se, že se nenačetl.
+ *
+ * Druhá pojistka je čistě v CSS: dokud JavaScript nepřidá `revealed`,
+ * odpočítává animace, která obsah po 1,2 s odkryje sama. Nezávisí na
+ * hydrataci ani na tom, jestli se doběhly skripty stránky.
+ */
 .reveal-on-scroll {
+  transition: opacity 0.9s cubic-bezier(0.19, 1, 0.22, 1), transform 0.9s cubic-bezier(0.19, 1, 0.22, 1), filter 0.9s cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+.js .reveal-on-scroll:not(.revealed) {
   opacity: 0;
   transform: translate3d(0, 40px, 0) scale(0.96);
   filter: blur(8px);
-  will-change: opacity, transform, filter;
-  transition: opacity 0.9s cubic-bezier(0.19, 1, 0.22, 1), transform 0.9s cubic-bezier(0.19, 1, 0.22, 1), filter 0.9s cubic-bezier(0.19, 1, 0.22, 1);
+  animation: reveal-failsafe 0.6s cubic-bezier(0.19, 1, 0.22, 1) 1.2s both;
+}
+
+@keyframes reveal-failsafe {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 40px, 0) scale(0.96);
+    filter: blur(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+    filter: blur(0);
+  }
 }
 
 .reveal-on-scroll.revealed {
@@ -1383,8 +1409,16 @@ select option {
   filter: blur(0);
 }
 
-.reveal-on-scroll--hero {
+.js .reveal-on-scroll--hero:not(.revealed) {
   transform: translate3d(0, 56px, 0) scale(0.93);
+}
+
+/* Rozostření je na mobilech drahé (každý prvek si vynutí vlastní vrstvu)
+   a na malém displeji ho stejně skoro není vidět. */
+@media (max-width: 768px) {
+  .js .reveal-on-scroll:not(.revealed) {
+    filter: none;
+  }
 }
 
 .reveal-on-scroll--delay {
@@ -1412,11 +1446,14 @@ select option {
   .reveal-on-scroll--hero,
   .reveal-on-scroll--delay,
   .reveal-on-scroll--delay-2,
-  .reveal-on-scroll--delay-3 {
+  .reveal-on-scroll--delay-3,
+  .js .reveal-on-scroll:not(.revealed),
+  .js .reveal-on-scroll--hero:not(.revealed) {
     opacity: 1;
     filter: none;
     transform: none;
     transition: none;
+    animation: none;
   }
 }
 
@@ -1545,6 +1582,7 @@ select option {
 .vehicle-card__spec-icon {
   width: 13px;
   height: 13px;
+  flex-shrink: 0;
   color: var(--gold-dim);
 }
 
@@ -1592,6 +1630,7 @@ select option {
 .vehicle-card__cta-arrow {
   width: 13px;
   height: 13px;
+  flex-shrink: 0;
   transition: transform 0.3s;
 }
 

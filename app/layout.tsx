@@ -7,6 +7,7 @@ import CookieConsent from "@/src/components/CookieConsent";
 import ScrollRevealObserver from "@/src/components/ScrollRevealObserver";
 import WhatsAppFloatingButton from "@/src/components/WhatsAppFloatingButton";
 import InstagramFloatingButton from "@/src/components/InstagramFloatingButton";
+import { VehicleCardIconSprite } from "@/src/components/VehicleCardIcons";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.mikaauto.cz";
 
@@ -120,11 +121,22 @@ export default function RootLayout({
   return (
     <html lang="cs">
       <head>
+        {/* Musí běžet dřív, než se cokoli vykreslí: bez třídy `js` se obsah
+            v CSS vůbec neschovává, takže při vypnutém nebo nedoručeném
+            JavaScriptu není stránka nikdy prázdná. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `document.documentElement.classList.add("js");`,
+          }}
+        />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link rel="preconnect" href="https://img.tipcars.com" />
         <link rel="dns-prefetch" href="https://img.tipcars.com" />
-        <link rel="icon" href="/miniatura_mika.png" type="image/png" />
+        {/* Dřív tu visel miniatura_mika.png (746 kB) – prohlížeč ho tahal při
+            každém načtení stránky. Teď je to zmenšená kopie, 3,9 kB. */}
+        <link rel="icon" href="/favicon-64.png" type="image/png" sizes="64x64" />
+        <link rel="apple-touch-icon" href="/favicon-192.png" sizes="192x192" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -141,8 +153,8 @@ export default function RootLayout({
       for (var i = 0; i < els.length; i++) els[i].classList.add("revealed");
     } catch (e) {}
   }
-  window.setTimeout(revealAll, 1800);
-  window.addEventListener("load", function(){ window.setTimeout(revealAll, 1800); });
+  window.setTimeout(revealAll, 2000);
+  window.addEventListener("load", function(){ window.setTimeout(revealAll, 2000); });
 
   var RELOAD_KEY = "mika-chunk-reload-at";
   function reloadOnce(){
@@ -176,6 +188,7 @@ export default function RootLayout({
         />
       </head>
       <body style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+        <VehicleCardIconSprite />
         <LanguageProvider>
           <ScrollRevealObserver />
           <Header />

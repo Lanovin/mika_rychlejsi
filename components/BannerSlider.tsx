@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import Image from "next/image";
+import { SafeImage } from "@/src/components/SafeImage";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface Banner {
@@ -78,13 +78,13 @@ export function BannerSlider({ banners }: BannerSliderProps) {
               pointerEvents: i === current ? "auto" : "none",
             }}
           >
-            <Image
+            <SafeImage
               src={b.imageUrl}
               alt={b.alt || `Banner ${i + 1}`}
-              fill
               sizes="100vw"
               style={{ objectFit: "cover" }}
               priority={i === 0}
+              loading={i === 0 ? undefined : "lazy"}
             />
           </Wrapper>
         );

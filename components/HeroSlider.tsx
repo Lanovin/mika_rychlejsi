@@ -3,18 +3,18 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, Calendar, Gauge } from "lucide-react";
-import type { Vehicle } from "@/src/lib/vehicle-types";
+import type { VehicleListItem } from "@/src/lib/vehicle-types";
 import { useLanguage } from "@/src/lib/LanguageContext";
 import { t, tReplace } from "@/src/lib/translations";
 import { VehicleImage } from "@/src/components/VehicleImage";
 
 interface HeroSliderProps {
-  vehicles: Vehicle[];
+  vehicles: VehicleListItem[];
 }
 
 const SLIDE_DURATION = 5000;
 
-function getCompactHeroTitle(car: Vehicle) {
+function getCompactHeroTitle(car: VehicleListItem) {
   const fullTitle = car.make && car.model ? `${car.make} ${car.model}`.trim() : car.title.trim();
   const words = fullTitle.split(/\s+/).filter(Boolean);
 
@@ -88,7 +88,7 @@ export function HeroSlider({ vehicles }: HeroSliderProps) {
           >
             <div className={`hero-slider__img-wrap ${i === current ? "hero-slider__img-wrap--zoom" : ""}`}>
               <VehicleImage
-                src={slidecar.imageUrl || "/placeholder-car.jpg"}
+                src={slidecar.imageUrl || "/placeholder-car.svg"}
                 alt={slidecar.title}
                 sizes="(max-width: 768px) 100vw, 50vw"
                 style={{ objectFit: "cover" }}

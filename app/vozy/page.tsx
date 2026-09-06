@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { InventoryPageClient } from "@/src/components/InventoryPageClient";
 import { readPublishedVehicles } from "@/src/lib/vehicle-store";
 import { readContent } from "@/src/lib/content-store";
+import { toVehicleListItem } from "@/src/lib/vehicle-types";
 
 interface InventoryPageContent {
   kicker?: string;
@@ -28,7 +29,7 @@ export default async function InventoryPage() {
 
   return (
     <InventoryPageClient
-      vehicles={vehicles}
+      vehicles={vehicles.map(toVehicleListItem)}
       cs={cs}
       en={en}
     />

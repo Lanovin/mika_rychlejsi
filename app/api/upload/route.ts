@@ -32,21 +32,38 @@ export async function POST(request: Request) {
   const buffer = Buffer.from(await file.arrayBuffer());
 
   if (hasDatabaseStorage()) {
-    const storedUpload = await saveUploadToStorage({
-      fileName,
-      contentType: file.type || "application/octet-stream",
-      content: buffer,
-    });
+    try {
+      const storedUpload = await saveUploadToStorage({
+        fileName,
+        contentType: file.type || "application/octet-stream",
+        content: buffer,
+      });
 
-    if (!storedUpload) {
-      return NextResponse.json({ error: "Upload storage unavailable" }, { status: 500 });
+      if (storedUpload) {
+        return NextResponse.json({ url: storedUpload.url });
+      }
+    } catch (error) {
+      console.error("[upload] Uložení obrázku do databáze selhalo.", error);
     }
 
-    return NextResponse.json({ url: storedUpload.url });
+    return NextResponse.json(
+      { error: "Obrázek se nepodařilo uložit do databáze. Zkuste to prosím znovu." },
+      { status: 503 },
+    );
   }
 
-  await mkdir(uploadsDir, { recursive: true });
-  await writeFile(filePath, buffer);
+  // Zápis na disk funguje jen ve vývoji – na Vercelu je souborový systém
+  // read-only, proto se chyba převede na srozumitelnou hlášku místo pádu.
+  try {
+    await mkdir(uploadsDir, { recursive: true });
+    await writeFile(filePath, buffer);
+  } catch (error) {
+    console.error("[upload] Zápis obrázku na disk selhal.", error);
+    return NextResponse.json(
+      { error: "Úložiště obrázků není nastavené (chybí databáze). Obrázek nelze uložit." },
+      { status: 503 },
+    );
+  }
 
   return NextResponse.json({ url: `/images/uploads/${fileName}` });
 }

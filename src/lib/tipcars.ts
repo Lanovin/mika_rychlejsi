@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import type { Vehicle, FuelType, Transmission } from "@/src/lib/vehicle-types";
+import { readDatabaseJson, writeDatabaseJson } from "@/src/lib/server-storage";
 
 const TIPCARS_URL =
   process.env.TIPCARS_URL ||
@@ -17,6 +18,24 @@ const TIPCARS_TIMEOUT_MS = Number.isFinite(configuredTimeout) && configuredTimeo
   : (isVercelDeployment ? 3500 : 15000);
 const TIPCARS_ATTEMPTS = 2;
 const TIPCARS_RETRY_DELAY_MS = 250;
+
+// Strop pro celé stahování včetně opakování. Bez něj mohly dva pokusy sežrat
+// tolik času, že funkce na Vercelu spadla na vlastní limit a návštěvník dostal
+// místo stránky chybu – tedy přesně to, čemu se opakováním předchází.
+const TIPCARS_TOTAL_BUDGET_MS = isVercelDeployment ? 6000 : 32000;
+const TIPCARS_MIN_ATTEMPT_MS = 1200;
+
+// Když se feed nepodaří stáhnout, nemá smysl to zkoušet u každého požadavku
+// znovu – každý takový pokus je několik sekund čekání navíc pro návštěvníka.
+// Po neúspěchu se proto chvíli servíruje záloha bez čekání.
+const TIPCARS_FAILURE_COOLDOWN_MS = 60 * 1000;
+
+// Poslední úspěšně stažený feed v databázi. Paměť funkce na Vercelu je
+// krátkodobá; po studeném startu by bez tohoto snímku spadla nabídka na
+// data/inventory.json, kde jsou jen ukázkové vozy s cizími fotkami.
+const SNAPSHOT_STORE_KEY = "tipcars-snapshot";
+const SNAPSHOT_MIN_WRITE_INTERVAL_MS = 10 * 60 * 1000;
+const SNAPSHOT_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
 // Server Tipcars je běžný Apache; požadavky bez rozumné identifikace
 // hostitelé rádi odmítají, tak se představíme.
@@ -243,8 +262,14 @@ function parseCarXml(carXml: string): Vehicle | null {
   };
 }
 
+// Poslední známá dobrá data. Drží se i po vypršení TTL – když feed vypadne,
+// je stará nabídka pořád lepší než prázdná stránka nebo ukázkové vozy.
 let cachedVehicles: Vehicle[] | null = null;
 let cacheTimestamp = 0;
+let cacheIsFallback = false;
+let nextAttemptAt = 0;
+let lastSnapshotWriteAt = 0;
+let lastSnapshotFingerprint = "";
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 const INVENTORY_PATH = path.join(process.cwd(), "data", "inventory.json");
@@ -291,6 +316,72 @@ async function loadLocalInventory(): Promise<Vehicle[]> {
   }
 }
 
+interface TipcarsSnapshot {
+  savedAt: string;
+  vehicles: Vehicle[];
+}
+
+/** Levný otisk nabídky – aby se do databáze nezapisovala nezměněná data. */
+function snapshotFingerprint(vehicles: Vehicle[]): string {
+  return `${vehicles.length}:${vehicles.map((v) => `${v.tipcarsId}@${v.price}@${v.updatedAt}`).join("|")}`;
+}
+
+/** Uloží poslední úspěšný feed jako zálohu pro studené starty. */
+function saveSnapshot(vehicles: Vehicle[]): void {
+  const now = Date.now();
+  const fingerprint = snapshotFingerprint(vehicles);
+
+  if (fingerprint === lastSnapshotFingerprint) return;
+  if (now - lastSnapshotWriteAt < SNAPSHOT_MIN_WRITE_INTERVAL_MS) return;
+
+  // Nastavuje se ještě před zápisem, aby souběžné požadavky nezapisovaly
+  // tutéž nabídku několikrát.
+  lastSnapshotWriteAt = now;
+  lastSnapshotFingerprint = fingerprint;
+
+  // Zápis vědomě neblokuje vykreslení stránky. Když ho Vercel po odeslání
+  // odpovědi utne, prostě se uloží až při některém dalším obnovení feedu.
+  void writeDatabaseJson<TipcarsSnapshot>(SNAPSHOT_STORE_KEY, {
+    savedAt: new Date().toISOString(),
+    vehicles,
+  }).catch(() => {
+    lastSnapshotFingerprint = "";
+  });
+}
+
+async function loadSnapshot(): Promise<Vehicle[]> {
+  const snapshot = await readDatabaseJson<TipcarsSnapshot>(SNAPSHOT_STORE_KEY);
+  if (!snapshot || !Array.isArray(snapshot.vehicles) || snapshot.vehicles.length === 0) {
+    return [];
+  }
+
+  const savedAt = Date.parse(snapshot.savedAt);
+  if (Number.isFinite(savedAt) && Date.now() - savedAt > SNAPSHOT_MAX_AGE_MS) {
+    console.warn(`[tipcars] Záloha nabídky je starší než 7 dní (${snapshot.savedAt}), nepoužívám ji.`);
+    return [];
+  }
+
+  return snapshot.vehicles;
+}
+
+/**
+ * Náhradní zdroj nabídky, od nejlepšího k nejhoršímu:
+ * poslední uložený feed → ukázkové vozy z repozitáře.
+ */
+async function loadFallbackVehicles(): Promise<Vehicle[]> {
+  try {
+    const snapshot = await loadSnapshot();
+    if (snapshot.length > 0) {
+      console.warn(`[tipcars] Používám zálohu nabídky z databáze (${snapshot.length} vozů).`);
+      return snapshot;
+    }
+  } catch (error) {
+    console.warn("[tipcars] Zálohu nabídky se z databáze nepodařilo načíst.", error);
+  }
+
+  return loadLocalInventory();
+}
+
 /**
  * Jeden pokus o stažení feedu.
  *
@@ -298,9 +389,9 @@ async function loadLocalInventory(): Promise<Vehicle[]> {
  * hlavičkách, takže kdyby se limit rušil hned za ním, nehlídal by stahování
  * těla (přes 900 kB XML) vůbec.
  */
-async function fetchTipcarsXml(): Promise<string> {
+async function fetchTipcarsXml(timeoutMs: number): Promise<string> {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), TIPCARS_TIMEOUT_MS);
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
     const res = await fetch(TIPCARS_URL, {
@@ -322,7 +413,14 @@ async function fetchTipcarsXml(): Promise<string> {
 
 export async function fetchTipcarsVehicles(): Promise<Vehicle[]> {
   const now = Date.now();
-  if (cachedVehicles && now - cacheTimestamp < CACHE_TTL) {
+
+  if (cachedVehicles && !cacheIsFallback && now - cacheTimestamp < CACHE_TTL) {
+    return cachedVehicles;
+  }
+
+  // Feed nedávno selhal a něco k zobrazení máme – neblokujeme návštěvníka
+  // dalším čekáním na server, který stejně nejspíš neodpoví.
+  if (cachedVehicles && now < nextAttemptAt) {
     return cachedVehicles;
   }
 
@@ -330,8 +428,14 @@ export async function fetchTipcarsVehicles(): Promise<Vehicle[]> {
   let lastReason = "neznámá chyba";
 
   for (let attempt = 1; attempt <= TIPCARS_ATTEMPTS; attempt += 1) {
+    const remainingBudget = TIPCARS_TOTAL_BUDGET_MS - (Date.now() - startedAt);
+    if (remainingBudget < TIPCARS_MIN_ATTEMPT_MS) {
+      lastReason = `${lastReason}; na další pokus už nezbyl čas (limit ${TIPCARS_TOTAL_BUDGET_MS} ms)`;
+      break;
+    }
+
     try {
-      const xml = await fetchTipcarsXml();
+      const xml = await fetchTipcarsXml(Math.min(TIPCARS_TIMEOUT_MS, remainingBudget));
 
       // Tipcars umí vrátit HTTP 200 a chybu až uvnitř XML – typicky kód 49,
       // "XML export není pro tento přístup povolený".
@@ -357,6 +461,9 @@ export async function fetchTipcarsVehicles(): Promise<Vehicle[]> {
 
       cachedVehicles = vehicles;
       cacheTimestamp = Date.now();
+      cacheIsFallback = false;
+      nextAttemptAt = 0;
+      saveSnapshot(vehicles);
       return vehicles;
     } catch (err) {
       lastReason = describeFetchError(err);
@@ -366,14 +473,26 @@ export async function fetchTipcarsVehicles(): Promise<Vehicle[]> {
     }
   }
 
+  nextAttemptAt = Date.now() + TIPCARS_FAILURE_COOLDOWN_MS;
+
   // Jediné místo, kde se hlásí propadnutí na zálohu – ať je v logu Vercelu
   // hned vidět, proč se zobrazují záložní inzeráty.
   console.error(
     `[tipcars] Feed se nenačetl ani na ${TIPCARS_ATTEMPTS}. pokus`
     + ` (${Date.now() - startedAt} ms, limit ${TIPCARS_TIMEOUT_MS} ms na pokus): ${lastReason}.`
-    + ` Zobrazuji ${cachedVehicles ? "poslední úspěšně načtená data" : "záložní data/inventory.json"}.`
+    + ` Zobrazuji ${cachedVehicles ? "poslední úspěšně načtená data" : "zálohu nabídky"}.`
     + ` Zdroj: ${tipcarsUrlForLog()}`
   );
 
-  return cachedVehicles ?? await loadLocalInventory();
+  if (cachedVehicles) {
+    return cachedVehicles;
+  }
+
+  const fallback = await loadFallbackVehicles();
+  if (fallback.length > 0) {
+    cachedVehicles = fallback;
+    cacheTimestamp = Date.now();
+    cacheIsFallback = true;
+  }
+  return fallback;
 }

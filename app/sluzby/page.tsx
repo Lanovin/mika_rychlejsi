@@ -12,14 +12,34 @@ export const metadata: Metadata = {
 	},
 };
 
+type SluzbyContent = {
+	header: { kicker: string; title: string; description: string };
+	summaryCards: { kicker: string; title: string }[];
+	services: { icon: string; title: string; shortDesc: string; longDesc: string }[];
+};
+
+const EMPTY_SLUZBY: SluzbyContent = {
+	header: { kicker: "", title: "", description: "" },
+	summaryCards: [],
+	services: [],
+};
+
+// Obsah přichází z CMS, takže se nedá spoléhat na to, že je kompletní.
+// Doplnění prázdných polí je levnější než bílá stránka.
+function normalize(raw: unknown): SluzbyContent | null {
+	if (!raw || typeof raw !== "object") return null;
+	const value = raw as Partial<SluzbyContent>;
+	return {
+		header: value.header ?? EMPTY_SLUZBY.header,
+		summaryCards: Array.isArray(value.summaryCards) ? value.summaryCards : [],
+		services: Array.isArray(value.services) ? value.services : [],
+	};
+}
+
 export default async function ServicesPage() {
 	const content = await readContent();
-	const cs = content.sluzby as {
-		header: { kicker: string; title: string; description: string };
-		summaryCards: { kicker: string; title: string }[];
-		services: { icon: string; title: string; shortDesc: string; longDesc: string }[];
-	};
-	const en = (content.sluzby_en ?? cs) as typeof cs;
+	const cs = normalize(content.sluzby) ?? EMPTY_SLUZBY;
+	const en = normalize(content.sluzby_en) ?? cs;
 
 	return <ServicesPageClient cs={cs} en={en} />;
 }

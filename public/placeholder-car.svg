@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" width="800" height="600" role="img" aria-label="Bez fotografie">
+  <rect width="800" height="600" fill="#0f0f0f"/>
+  <g fill="none" stroke="#5a4a24" stroke-width="10" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M170 372h460M214 372l34-96a44 44 0 0 1 41-28h222a44 44 0 0 1 41 28l34 96"/>
+    <circle cx="286" cy="392" r="38"/>
+    <circle cx="514" cy="392" r="38"/>
+    <path d="M170 372v-34a26 26 0 0 1 26-26h20M630 372v-34a26 26 0 0 0-26-26h-20"/>
+  </g>
+  <text x="400" y="486" text-anchor="middle" font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-size="30" letter-spacing="4" fill="#8a8175">BEZ FOTOGRAFIE</text>
+</svg>
