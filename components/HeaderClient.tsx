@@ -5,8 +5,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { Phone, Clock, ChevronDown, Home, X } from "lucide-react";
 import { usePathname } from "next/navigation";
-import czFlag from "@/cz.png";
-import gbFlag from "@/gb.png";
+import czFlag from "@/flag-cz.png";
+import gbFlag from "@/flag-gb.png";
 import { useLanguage } from "@/src/lib/LanguageContext";
 import { t } from "@/src/lib/translations";
 
@@ -35,6 +35,9 @@ interface HeaderClientProps {
   servicesEn?: ServiceItem[];
 }
 
+// Vlajky jdou schválně mimo optimalizátor Next.js: vykreslují se 18 px
+// široké, takže není co optimalizovat, a každý průchod optimalizátorem je
+// další způsob, jak se obrázek nemusí načíst (viz komentář v next.config.mjs).
 function LanguageToggleVisual({ lang, size = 18 }: { lang: "cs" | "en" ; size?: number }) {
   const flagHeight = Math.round(size * 0.68);
 
@@ -46,6 +49,7 @@ function LanguageToggleVisual({ lang, size = 18 }: { lang: "cs" | "en" ; size?: 
           alt="Čeština"
           width={size}
           height={flagHeight}
+          unoptimized
           style={{ width: `${size}px`, height: `${flagHeight}px`, objectFit: "cover", borderRadius: "2px" }}
         />
       </span>
@@ -56,6 +60,7 @@ function LanguageToggleVisual({ lang, size = 18 }: { lang: "cs" | "en" ; size?: 
           alt="English"
           width={size}
           height={flagHeight}
+          unoptimized
           style={{ width: `${size}px`, height: `${flagHeight}px`, objectFit: "cover", borderRadius: "2px" }}
         />
       </span>

@@ -42,6 +42,19 @@ const nextConfig = {
       },
     ];
   },
+  /*
+   * Optimalizátor obrázků se používá co nejméně.
+   *
+   * Vercel má na transformace měsíční kvótu a po jejím vyčerpání vrací
+   * `/_next/image` chybu 402 – s hlavičkou `max-age=31536000, immutable`.
+   * Rozbitý obrázek se tak zacachuje na rok. Přesně tohle se 6. 9. 2026 dělo
+   * v produkci (`X-Vercel-Error: OPTIMIZED_IMAGE_REQUEST_PAYMENT_REQUIRED`).
+   *
+   * Proto: fotky vozů jdou přímo z CDN Tipcars ve třech hotových velikostech
+   * (src/lib/vehicle-images.ts), vlajky a loga jsou předzmenšené soubory
+   * s `unoptimized`, a jediné, co přes optimalizátor ještě jde, jsou bannery
+   * z CMS – ty mají v SafeImage záchranu na přímý soubor.
+   */
   images: {
     formats: ["image/avif", "image/webp"],
     minimumCacheTTL: 86400,

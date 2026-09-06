@@ -1,11 +1,12 @@
 import Image from "next/image";
-import instagramLogo from "@/instagram.png";
+import instagramLogo from "@/instagram-btn.png";
 
 const INSTAGRAM_URL =
   "https://www.instagram.com/mikaauto.cz?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==";
 
 // Rozměry, odsazení i dorovnání log řeší .floating-action-btn v globals.css,
-// aby se obě plovoucí tlačítka nemohla rozejít.
+// aby se obě plovoucí tlačítka nemohla rozejít. Logo je předem zmenšené na
+// velikost tlačítka a jde mimo optimalizátor – viz next.config.mjs.
 export default function InstagramFloatingButton() {
   return (
     <a
@@ -20,7 +21,7 @@ export default function InstagramFloatingButton() {
         src={instagramLogo}
         alt="Instagram"
         className="floating-action-btn__image"
-        sizes="(max-width: 768px) 56px, 68px"
+        unoptimized
         loading="lazy"
       />
     </a>

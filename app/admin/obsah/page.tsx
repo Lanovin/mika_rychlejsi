@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { useLanguage } from "@/src/lib/LanguageContext";
 import { t } from "@/src/lib/translations";
+import { compressImages } from "@/src/lib/image-compress";
 
 type ContentData = Record<string, unknown>;
 type EditLang = "cs" | "en";
@@ -442,8 +443,15 @@ export default function CmsPage() {
                                 onChange={async (e) => {
                                   const file = e.target.files?.[0];
                                   if (!file) return;
+                                  // Banner se zmenší už v prohlížeči. Bez toho
+                                  // šly do databáze i dvoumegabajtové PNG,
+                                  // které se pak na mobilu stahovaly celé –
+                                  // optimalizátor Next.js na ně spoléhat nelze.
+                                  const [compressed] = await compressImages([file], {
+                                    totalBudgetBytes: 400 * 1024,
+                                  }).catch(() => [file]);
                                   const form = new FormData();
-                                  form.append("file", file);
+                                  form.append("file", compressed ?? file);
                                   try {
                                     const res = await fetch("/api/upload", { method: "POST", body: form });
                                     const data = await res.json().catch(() => null);

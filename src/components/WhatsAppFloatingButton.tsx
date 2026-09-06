@@ -1,10 +1,11 @@
 import Image from "next/image";
-import whatsappLogo from "@/whatsapp-clean.png";
+import whatsappLogo from "@/whatsapp-btn.png";
 
 const WHATSAPP_URL = "https://wa.me/420774333774";
 
 // Rozměry, odsazení i dorovnání log řeší .floating-action-btn v globals.css,
-// aby se obě plovoucí tlačítka nemohla rozejít.
+// aby se obě plovoucí tlačítka nemohla rozejít. Logo je předem zmenšené na
+// velikost tlačítka a jde mimo optimalizátor – viz next.config.mjs.
 export default function WhatsAppFloatingButton() {
   return (
     <a
@@ -17,7 +18,7 @@ export default function WhatsAppFloatingButton() {
         src={whatsappLogo}
         alt="WhatsApp"
         className="floating-action-btn__image"
-        sizes="(max-width: 768px) 56px, 68px"
+        unoptimized
         loading="lazy"
       />
     </a>
