@@ -1,17 +1,10 @@
 import type { MetadataRoute } from "next";
 import { readPublishedVehicles } from "@/src/lib/vehicle-store";
 import { readContent } from "@/src/lib/content-store";
+import { slugify } from "@/src/lib/slugify";
 
 export const dynamic = "force-dynamic";
 
-function slugify(text: string): string {
-  return text
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
-}
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.mikaauto.cz";

@@ -108,11 +108,11 @@ export function AdminDashboardClient({
               className="text-left text-xs uppercase tracking-wide text-muted"
             >
               <tr>
-                <th className="px-4 py-3 font-medium">{t("admin.colVehicle", lang)}</th>
-                <th className="px-4 py-3 font-medium">{t("admin.colPrice", lang)}</th>
-                <th className="px-4 py-3 font-medium">{t("admin.colYearKm", lang)}</th>
-                <th className="px-4 py-3 font-medium">{t("admin.colStatus", lang)}</th>
-                <th className="px-4 py-3 font-medium">{t("admin.colActions", lang)}</th>
+                <th className="px-4 py-3 font-medium">{t("admin.thVehicle", lang)}</th>
+                <th className="px-4 py-3 font-medium">{t("admin.thPrice", lang)}</th>
+                <th className="px-4 py-3 font-medium">{t("admin.thYearKm", lang)}</th>
+                <th className="px-4 py-3 font-medium">{t("admin.thStatus", lang)}</th>
+                <th className="px-4 py-3 font-medium">{t("admin.thActions", lang)}</th>
               </tr>
             </thead>
             <tbody

@@ -1,12 +1,39 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { Suspense, useCallback, useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 import { useLanguage } from "@/src/lib/LanguageContext";
 import { t } from "@/src/lib/translations";
 
 const CONTACT_FORM_ID = "kontaktni-formular";
+
+/**
+ * Detail vozu odkazuje na `/kontakt?car=<id>`. Parametr se dřív nikde nečetl,
+ * takže zákazník přišel na prázdný formulář a musel vůz popsat sám. Čte se
+ * až na klientovi, aby stránka zůstala statická; `useSearchParams` proto
+ * musí být pod vlastním Suspense.
+ */
+function CarParamReader({ onCar }: { onCar: (carId: string) => void }) {
+  const searchParams = useSearchParams();
+  const carId = searchParams?.get("car") ?? "";
+
+  useEffect(() => {
+    if (carId) onCar(carId);
+  }, [carId, onCar]);
+
+  return null;
+}
+
+function describeCar(carId: string, lang: "cs" | "en") {
+  // Adresa vozu je `znacka-model-rok-idTipcars`; pro text stačí lidská část.
+  const parts = carId.split("-");
+  const label = parts.slice(0, -1).join(" ").replace(/\s+/g, " ").trim() || carId;
+  return lang === "cs"
+    ? `Dobrý den, mám zájem o vůz ${label} (${carId}). Prosím o kontaktování.`
+    : `Hello, I am interested in the vehicle ${label} (${carId}). Please contact me.`;
+}
 
 interface ContactData {
   _layout?: string[];
@@ -53,6 +80,10 @@ export function ContactPageClient({
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [prefilledMessage, setPrefilledMessage] = useState("");
+  const handleCarParam = useCallback((carId: string) => {
+    setPrefilledMessage(describeCar(carId, lang));
+  }, [lang]);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -95,6 +126,9 @@ export function ContactPageClient({
 
   return (
     <div className="container-page py-10 pb-16">
+      <Suspense fallback={null}>
+        <CarParamReader onCar={handleCarParam} />
+      </Suspense>
       {/* Header */}
       {show("header") && (
       <header className="max-w-3xl reveal-on-scroll">
@@ -354,9 +388,11 @@ export function ContactPageClient({
                   {t("contact.message", lang)}
                 </label>
                 <textarea
+                  key={prefilledMessage}
                   rows={4}
                   name="message"
                   required
+                  defaultValue={prefilledMessage}
                   placeholder={t("contact.messagePlaceholder", lang)}
                 />
               </div>

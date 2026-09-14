@@ -322,10 +322,11 @@ export async function POST(request: Request) {
       );
     }
 
+    // Podrobnost patří do logu; do prohlížeče by odnesla názvy hostů,
+    // SMTP chyby a podobné interní údaje.
     console.error("[contact] Error:", error);
-    const detail = error instanceof Error ? error.message : String(error);
     return NextResponse.json(
-      { error: "Internal server error", detail },
+      { error: "Zprávu se nepodařilo odeslat. Zkuste to prosím znovu nebo nám zavolejte." },
       { status: 500 }
     );
   }

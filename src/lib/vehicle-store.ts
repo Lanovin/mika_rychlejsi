@@ -72,9 +72,20 @@ export const readPublishedVehicles = cache(async (): Promise<Vehicle[]> => {
   return vehicles.filter((v) => v.published);
 });
 
+/**
+ * Adresa vozu končí id z Tipcars (`…-2024-25297744`). Textová část se odvozuje
+ * z názvu, který klient v Tipcars může přepsat – pak by starý odkaz (Google,
+ * sdílený chat, sitemap z minulé hodiny) skončil na 404. Proto se po přesné
+ * shodě zkouší ještě shoda podle id na konci adresy.
+ */
 export const readVehicleById = cache(async (id: string): Promise<Vehicle | null> => {
   const vehicles = await readVehicles();
-  return vehicles.find((v) => v.id === id) ?? null;
+  const exact = vehicles.find((v) => v.id === id);
+  if (exact) return exact;
+
+  const tipcarsId = id.split("-").pop();
+  if (!tipcarsId) return null;
+  return vehicles.find((v) => v.tipcarsId === tipcarsId) ?? null;
 });
 
 export async function setVehicleLabel(

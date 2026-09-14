@@ -2,17 +2,10 @@ import type { Metadata } from "next";
 import { readContent } from "@/src/lib/content-store";
 import { notFound } from "next/navigation";
 import { ServiceDetailClient } from "@/src/components/ServiceDetailClient";
+import { slugify } from "@/src/lib/slugify";
 
 export const revalidate = 300;
 
-function slugify(text: string): string {
-  return text
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
-}
 
 interface ServiceItem {
   icon?: string;

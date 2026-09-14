@@ -1,15 +1,8 @@
 import type { Metadata } from "next";
 import { readContent } from "@/src/lib/content-store";
 import { ContactPageClient } from "@/src/components/ContactPageClient";
+import { slugify } from "@/src/lib/slugify";
 
-function slugify(text: string): string {
-  return text
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
-}
 
 export const metadata: Metadata = {
   title: "Kontakt – Autobazar Mika Auto Brno",

@@ -33,3 +33,6 @@ tsconfig.tsbuildinfo
 public/uploads/vehicles/
 .vercel
 .env*.local
+
+# zprávy z formulářů – osobní údaje, patří jen do databáze
+data/messages.json

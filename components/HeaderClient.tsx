@@ -9,6 +9,7 @@ import czFlag from "@/flag-cz.png";
 import gbFlag from "@/flag-gb.png";
 import { useLanguage } from "@/src/lib/LanguageContext";
 import { t } from "@/src/lib/translations";
+import { slugify } from "@/src/lib/slugify";
 
 interface AlertContent {
   active?: boolean;
@@ -68,14 +69,6 @@ function LanguageToggleVisual({ lang, size = 18 }: { lang: "cs" | "en" ; size?: 
   );
 }
 
-function slugify(text: string): string {
-  return text
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)/g, '');
-}
 
 function getLeftNav(lang: "cs" | "en") {
   return [
@@ -222,9 +215,9 @@ export function HeaderClient({ alert, kontaktCs, kontaktEn, servicesCs = [], ser
   }, []);
 
   // Parse short hours for the top bar
-  const shortHours = kontakt ? (() => {
-    const wd = kontakt.hours.weekdays;
-    const sat = kontakt.hours.saturday;
+  const shortHours = kontakt?.hours ? (() => {
+    const wd = kontakt.hours.weekdays ?? "";
+    const sat = kontakt.hours.saturday ?? "";
     // Extract just the time part after the colon/label
     const wdTime = wd.replace(/^[^:]+:\s*/, '').replace(/^[^0-9]*/, '');
     const satTime = sat.replace(/^[^:]+:\s*/, '').replace(/^[^0-9]*/, '');
@@ -244,7 +237,7 @@ export function HeaderClient({ alert, kontaktCs, kontaktEn, servicesCs = [], ser
         transition: 'top 0.35s ease',
       }}>
         <div className="container-page" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '44px', gap: '16px' }}>
-          <a href={`tel:${kontakt.phone.replace(/\s/g, '')}`}
+          <a href={`tel:${(kontakt.phone ?? '').replace(/\s/g, '')}`}
             className="topbar-item"
             style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', textDecoration: 'none', color: 'var(--gold-light)', fontWeight: 700, fontSize: '15px', letterSpacing: '0.04em', padding: '5px 0' }}
           >

@@ -12,7 +12,25 @@ export interface SessionUser {
 }
 
 const SESSION_COOKIE = "mika-user-session";
-const authSecret = process.env.AUTH_SESSION_SECRET ?? "mika-auth-secret-change-me";
+
+/**
+ * Tajný klíč pro podpis session. Repozitář je veřejný, takže výchozí
+ * hodnota v kódu by v produkci znamenala, že si kdokoli podepíše admin
+ * cookie sám. Bez AUTH_SESSION_SECRET se proto v produkci nepřihlásí nikdo –
+ * lepší nefunkční admin než cizí ruce v CMS. Mimo produkci zůstává vývojový
+ * klíč, aby šel web spustit bez konfigurace.
+ */
+function resolveAuthSecret(): string | null {
+  const configured = process.env.AUTH_SESSION_SECRET?.trim();
+  if (configured) return configured;
+  if (process.env.NODE_ENV === "production") {
+    console.error("[auth] AUTH_SESSION_SECRET není nastavený – přihlášení do administrace je vypnuté.");
+    return null;
+  }
+  return "mika-dev-only-secret";
+}
+
+const authSecret = resolveAuthSecret();
 
 /**
  * Admin přihlašovací údaje se berou výhradně z prostředí (env).
@@ -36,18 +54,25 @@ function safeEqual(a: string, b: string) {
   return timingSafeEqual(ah, bh);
 }
 
-function signPayload(payload: string) {
+function signPayload(payload: string): string | null {
+  if (!authSecret) return null;
   return createHmac("sha256", authSecret).update(payload).digest("hex");
 }
 
-function encodeSession(user: SessionUser) {
+function encodeSession(user: SessionUser): string | null {
   const payload = Buffer.from(JSON.stringify(user)).toString("base64url");
-  return `${payload}.${signPayload(payload)}`;
+  const signature = signPayload(payload);
+  return signature ? `${payload}.${signature}` : null;
 }
 
 function decodeSession(value: string): SessionUser | null {
   const [payload, signature] = value.split(".");
-  if (!payload || !signature || signPayload(payload) !== signature) {
+  if (!payload || !signature) {
+    return null;
+  }
+
+  const expected = signPayload(payload);
+  if (!expected || !safeEqual(expected, signature)) {
     return null;
   }
 
@@ -58,15 +83,19 @@ function decodeSession(value: string): SessionUser | null {
   }
 }
 
-async function setSession(user: SessionUser) {
+async function setSession(user: SessionUser): Promise<boolean> {
+  const encoded = encodeSession(user);
+  if (!encoded) return false;
+
   const cookieStore = await cookies();
-  cookieStore.set(SESSION_COOKIE, encodeSession(user), {
+  cookieStore.set(SESSION_COOKIE, encoded, {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
     path: "/",
     maxAge: 60 * 60 * 24 * 7
   });
+  return true;
 }
 
 export async function getCurrentUser() {
@@ -119,8 +148,8 @@ export async function loginUser(identifier: string, password: string): Promise<S
     role: "admin"
   };
 
-  await setSession(sessionUser);
-  return sessionUser;
+  const stored = await setSession(sessionUser);
+  return stored ? sessionUser : null;
 }
 
 export async function logoutUser() {

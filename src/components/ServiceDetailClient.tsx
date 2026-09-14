@@ -5,15 +5,8 @@ import { ArrowLeft } from "lucide-react";
 import { useLanguage } from "@/src/lib/LanguageContext";
 import { t } from "@/src/lib/translations";
 import { VehiclePurchaseForm } from "@/src/components/VehiclePurchaseForm";
+import { slugify } from "@/src/lib/slugify";
 
-function slugify(text: string): string {
-  return text
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
-}
 
 interface ServiceItem {
   title: string;

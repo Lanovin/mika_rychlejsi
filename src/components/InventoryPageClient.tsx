@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { ArrowUpDown, RotateCcw, SlidersHorizontal, X } from "lucide-react";
 import { VehicleCard } from "@/src/components/VehicleCard";
 import { SkeletonCard } from "@/src/components/SkeletonCard";
-import type { VehicleListItem } from "@/src/lib/vehicle-types";
+import { FUEL_OPTIONS, TRANSMISSION_OPTIONS, type FuelType, type VehicleListItem } from "@/src/lib/vehicle-types";
 import { useLanguage } from "@/src/lib/LanguageContext";
 import { t } from "@/src/lib/translations";
 
@@ -21,6 +21,15 @@ interface InventoryFilters {
   fuel: string;
   kind: string;
 }
+
+const FUEL_LABEL_KEY: Record<FuelType, string> = {
+  "benzín": "fuel.benzin",
+  "nafta": "fuel.nafta",
+  "hybrid": "fuel.hybrid",
+  "elektro": "fuel.elektro",
+  "LPG": "fuel.lpg",
+  "CNG": "fuel.cng",
+};
 
 const INITIAL_FILTERS: InventoryFilters = {
   makes: [],
@@ -107,8 +116,21 @@ export function InventoryPageClient({ vehicles, cs, en }: InventoryPageClientPro
 
   const allBodies = useMemo(() => Array.from(new Set(vehicles.map((vehicle) => vehicle.body))).sort(), [vehicles]);
   const allKinds = useMemo(() => Array.from(new Set(vehicles.map((vehicle) => vehicle.kind).filter(Boolean))).sort(), [vehicles]);
-  const allTransmissions = [t("trans.manual", lang), t("trans.auto", lang)];
-  const allFuels = [t("fuel.benzin", lang), t("fuel.nafta", lang), t("fuel.hybrid", lang), t("fuel.elektro", lang)];
+  // Filtr drží kanonickou hodnotu vozu (`car.fuel`, `car.transmission`),
+  // ne přeložený popisek. Dřív se porovnával popisek s hodnotou, takže
+  // „hybrid/benzín" nikdy nesedělo na „hybrid" a v angličtině nefungoval
+  // filtr paliva ani převodovky vůbec. Nabízí se jen paliva, která jsou
+  // v nabídce opravdu k dispozici.
+  const allTransmissions = TRANSMISSION_OPTIONS.map((value) => ({
+    value,
+    label: t(value === "manuální" ? "trans.manual" : "trans.auto", lang),
+  }));
+  const fuelsInStock = useMemo(() => new Set(vehicles.map((vehicle) => vehicle.fuel)), [vehicles]);
+  const allFuels = FUEL_OPTIONS
+    .filter((value) => fuelsInStock.has(value))
+    .map((value) => ({ value, label: t(FUEL_LABEL_KEY[value], lang) }));
+  const fuelLabel = (value: string) => allFuels.find((fuel) => fuel.value === value)?.label ?? value;
+  const transmissionLabel = (value: string) => allTransmissions.find((item) => item.value === value)?.label ?? value;
 
   const filteredCars = useMemo(() => {
     const nextCars = vehicles.filter((car) => {
@@ -176,8 +198,8 @@ export function InventoryPageClient({ vehicles, cs, en }: InventoryPageClientPro
     ...filters.makes.map((make) => ({ label: make, onRemove: () => removeToggleMake(make) })),
     ...filters.models.map((model) => ({ label: model, onRemove: () => removeToggleModel(model) })),
     ...filters.bodies.map((body) => ({ label: body, onRemove: () => removeToggleBody(body) })),
-    ...(filters.transmission ? [{ label: filters.transmission, onRemove: () => removeFilter({ transmission: "" }) }] : []),
-    ...(filters.fuel ? [{ label: filters.fuel, onRemove: () => removeFilter({ fuel: "" }) }] : []),
+    ...(filters.transmission ? [{ label: transmissionLabel(filters.transmission), onRemove: () => removeFilter({ transmission: "" }) }] : []),
+    ...(filters.fuel ? [{ label: fuelLabel(filters.fuel), onRemove: () => removeFilter({ fuel: "" }) }] : []),
     ...(filters.kind ? [{ label: filters.kind, onRemove: () => removeFilter({ kind: "" }) }] : []),
     ...(filters.minPrice > 0 || filters.maxPrice < INITIAL_FILTERS.maxPrice
       ? [{ label: `${filters.minPrice.toLocaleString("cs-CZ")}–${filters.maxPrice.toLocaleString("cs-CZ")} Kč`, onRemove: () => removeFilter({ minPrice: INITIAL_FILTERS.minPrice, maxPrice: INITIAL_FILTERS.maxPrice }) }]
@@ -409,7 +431,7 @@ export function InventoryPageClient({ vehicles, cs, en }: InventoryPageClientPro
                 <select value={pendingFilters.transmission} onChange={(event) => handleFilterChange({ transmission: event.target.value })} className="mt-1 w-full">
                   <option value="">{t("inv.allTrans", lang)}</option>
                   {allTransmissions.map((transmission) => (
-                    <option key={transmission} value={transmission}>{transmission}</option>
+                    <option key={transmission.value} value={transmission.value}>{transmission.label}</option>
                   ))}
                 </select>
               </div>
@@ -419,7 +441,7 @@ export function InventoryPageClient({ vehicles, cs, en }: InventoryPageClientPro
                 <select value={pendingFilters.fuel} onChange={(event) => handleFilterChange({ fuel: event.target.value })} className="mt-1 w-full">
                   <option value="">{t("inv.allFuel", lang)}</option>
                   {allFuels.map((fuel) => (
-                    <option key={fuel} value={fuel}>{fuel}</option>
+                    <option key={fuel.value} value={fuel.value}>{fuel.label}</option>
                   ))}
                 </select>
               </div>

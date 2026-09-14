@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import type { Vehicle, FuelType, Transmission } from "@/src/lib/vehicle-types";
 import { readDatabaseJson, writeDatabaseJson } from "@/src/lib/server-storage";
+import { slugify } from "@/src/lib/slugify";
 
 const TIPCARS_URL =
   process.env.TIPCARS_URL ||
@@ -94,18 +95,41 @@ function mapFuel(raw: string): FuelType {
   const lower = raw.toLowerCase();
   if (lower.includes("hybrid")) return "hybrid";
   if (lower.includes("nafta") || lower.includes("diesel")) return "nafta";
-  if (lower.includes("benz")) return "benzín";
-  if (lower.includes("elekt")) return "elektro";
+  // Přestavby ("benzin + LPG") musí vyhrát nad benzínem, jinak by LPG nikdy nevzniklo.
   if (lower.includes("lpg")) return "LPG";
   if (lower.includes("cng")) return "CNG";
+  if (lower.includes("benz")) return "benzín";
+  if (lower.includes("elekt")) return "elektro";
   return "benzín";
 }
 
-function mapTransmission(equipmentList: string[]): Transmission {
-  const joined = equipmentList.join(" ").toLowerCase();
-  if (joined.includes("aut. převodovka") || joined.includes("automat")) {
-    return "automatická";
+/**
+ * Klíče výbavy Tipcars, které nesou převodovku. Text položky je jen pro
+ * lidi a Tipcars ho může přeformulovat; klíč je stabilní identifikátor.
+ */
+const GEARBOX_KEYS_AUTOMATIC = new Set(["04", "P1"]); // aut. převodovka, poloaut. převodovka
+const GEARBOX_KEYS_MANUAL = new Set(["15"]);           // manuální převodovka
+
+/**
+ * Převodovka se ve feedu neposílá zvlášť – je to položka výbavy. Dřív se
+ * hledal podřetězec "automat" v celé výbavě, takže manuální vůz
+ * s "automatickým přepínáním dálkových světel" nebo "automatickým
+ * parkováním" skončil jako automat (6 z 68 vozů). Teď rozhoduje klíč
+ * položky, text jen jako záloha, a to výhradně u položek o převodovce.
+ */
+function mapTransmission(equipment: { key: string; text: string }[]): Transmission {
+  for (const item of equipment) {
+    if (GEARBOX_KEYS_MANUAL.has(item.key)) return "manuální";
+    if (GEARBOX_KEYS_AUTOMATIC.has(item.key)) return "automatická";
   }
+
+  for (const item of equipment) {
+    const text = item.text.toLowerCase();
+    if (!text.includes("převodovk")) continue;
+    if (text.includes("manu")) return "manuální";
+    if (text.includes("aut")) return "automatická";
+  }
+
   return "manuální";
 }
 
@@ -115,14 +139,15 @@ function parseYear(madeDate: string): number {
   return Number.isFinite(y) ? y : 0;
 }
 
-function slugify(value: string): string {
-  return value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "")
-    .slice(0, 80);
+/**
+ * Adresa vozu: čitelný text + id z Tipcars na konci. Zkracuje se jen textová
+ * část – kdyby se ořízlo id, dva vozy by mohly dostat stejnou adresu a odkaz
+ * by přestal fungovat. Vyhledání podle id na konci adresy dělá
+ * `readVehicleById`, takže přejmenování modelu v Tipcars staré odkazy nerozbije.
+ */
+function buildVehicleId(text: string, tipcarsId: string): string {
+  const suffix = `-${slugify(tipcarsId)}`;
+  return slugify(text).slice(0, 80 - suffix.length).replace(/-$/, "") + suffix;
 }
 
 function decodeEntities(text: string): string {
@@ -212,21 +237,28 @@ function parseCarXml(carXml: string): Vehicle | null {
     mainPhoto = gallery[0];
   }
 
-  // Equipment
+  // Equipment – klíč a text jdou ve feedu v párech za sebou.
+  const equipmentKeys = getAllTags(carXml, "equipment_klic");
   const equipmentTexts = getAllTags(carXml, "equipment_text").map(decodeEntities);
+  const equipment = equipmentTexts.map((text, index) => ({
+    key: equipmentKeys[index] ?? "",
+    text,
+  }));
 
-  // Tipcars dedicated VAT-deduction flag: <dph>A</dph> = yes, <dph>N</dph> = no
-  const dphTag = getTag(carXml, "dph").trim().toUpperCase();
-  const vatDeduction = Boolean(priceWithoutVat)
-    || dphTag === "A"
-    || (dphTag !== "N" && hasVatDeduction(note, ...equipmentTexts));
+  // Odpočet DPH: Tipcars posílá pole `odpocet_2` (1 = odpočet možný). Žádný
+  // tag <dph> ve feedu není – dřívější kód se na něj spoléhal a fungoval
+  // jen díky rozdílu cen a hádání z poznámky. Ty zůstávají jako záloha
+  // pro případ, že by pole chybělo.
+  const odpocetTag = getTag(carXml, "odpocet_2").trim();
+  const vatDeduction = odpocetTag === "1"
+    || (odpocetTag !== "0" && (Boolean(priceWithoutVat) || hasVatDeduction(note, ...equipmentTexts)));
 
   const fuel = mapFuel(fuelText);
-  const transmission = mapTransmission(equipmentTexts);
+  const transmission = mapTransmission(equipment);
   const year = parseYear(madeDate);
 
   const title = `${manufacturer} ${model}${typeInfo ? " " + typeInfo : ""}`;
-  const id = slugify(`${manufacturer}-${model}-${year}-${tipcarsId}`);
+  const id = buildVehicleId(`${manufacturer}-${model}-${year}`, tipcarsId);
 
   return {
     id,
