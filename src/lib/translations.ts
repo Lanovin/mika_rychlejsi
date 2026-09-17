@@ -163,8 +163,7 @@ const translations: Record<string, Record<Lang, string>> = {
   "detail.nextStepDesc": { cs: "Pokud vás vůz zaujal, doporučujeme si co nejdřív rezervovat termín prohlídky. Připravíme auto, podklady i orientační návrh financování.", en: "If you're interested in the vehicle, we recommend booking a viewing appointment as soon as possible. We'll prepare the car, documents and an indicative financing proposal." },
   "detail.call": { cs: "Zavolat", en: "Call" },
   "detail.book": { cs: "Rezervovat", en: "Book" },
-  "detail.readyPickup": { cs: "připravený k odběru", en: "ready for pickup" },
-  "detail.clearCondition": { cs: "km s přehledným stavem", en: "km with clear condition" },
+  "detail.odometer": { cs: "Stav tachometru", en: "Odometer" },
   "detail.gearbox": { cs: "převodovka", en: "gearbox" },
 
   // ─── Contact page ──────────────────────────────────

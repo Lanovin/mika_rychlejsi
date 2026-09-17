@@ -171,9 +171,11 @@ export function VehicleDetailClient({ car }: { car: Vehicle }) {
     t("detail.trust3", lang),
   ];
 
+  // Holé údaje bez marketingových přívlastků – „připravený k odběru"
+  // a „s přehledným stavem" nic neříkaly a u některých vozů ani neplatily.
   const quickReasons = [
-    `${car.year} • ${car.body} ${t("detail.readyPickup", lang)}`,
-    `${formattedMileage} ${t("detail.clearCondition", lang)}`,
+    [String(car.year), car.body].filter(Boolean).join(" • "),
+    `${t("detail.odometer", lang)} ${formattedMileage} km`,
     `${car.powerKw} kW ${lang === "cs" ? "a" : "and"} ${car.transmission} ${t("detail.gearbox", lang)}`,
   ];
 
