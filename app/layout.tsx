@@ -4,6 +4,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { LanguageProvider } from "@/src/lib/LanguageContext";
 import CookieConsent from "@/src/components/CookieConsent";
+import GoogleAnalytics from "@/src/components/GoogleAnalytics";
 import ScrollRevealObserver from "@/src/components/ScrollRevealObserver";
 import WhatsAppFloatingButton from "@/src/components/WhatsAppFloatingButton";
 import InstagramFloatingButton from "@/src/components/InstagramFloatingButton";
@@ -198,6 +199,7 @@ export default function RootLayout({
           <InstagramFloatingButton />
           <CookieConsent />
         </LanguageProvider>
+        <GoogleAnalytics />
       </body>
     </html>
   );
