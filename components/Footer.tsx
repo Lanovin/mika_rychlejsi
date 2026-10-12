@@ -43,7 +43,9 @@ export async function Footer() {
   const fEn = (content.footer_en as FooterContent | undefined) ?? f;
   const k = normalizeKontakt(content.kontakt) ?? EMPTY_KONTAKT;
   const kEn = normalizeKontakt(content.kontakt_en) ?? k;
+  const cookieLink = (content.cookies as { footerLink?: string } | undefined)?.footerLink ?? "";
+  const cookieLinkEn = (content.cookies_en as { footerLink?: string } | undefined)?.footerLink ?? cookieLink;
 
-  return <FooterClient f={f} fEn={fEn} k={k} kEn={kEn} />;
+  return <FooterClient f={f} fEn={fEn} k={k} kEn={kEn} cookieLink={cookieLink} cookieLinkEn={cookieLinkEn} />;
 }
 

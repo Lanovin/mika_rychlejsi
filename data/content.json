@@ -558,5 +558,41 @@
         "imageUrl": "/images/uploads/1776027704801-adfc0361-567c-4b6e-9ac3-9672fbd0caca-Mika-reklama-test1.png"
       }
     ]
+  },
+  "cookies": {
+    "footerLink": "Nastavení cookies",
+    "policyUrl": "",
+    "policyLinkLabel": "Zásady používání cookies",
+    "title": "Používáme cookies",
+    "description": "Nezbytné cookies zajišťují základní fungování webu. S vaším souhlasem použijeme také analytické cookies (Google Analytics), díky kterým víme, jak web používáte, a můžeme ho zlepšovat. Svou volbu můžete kdykoli změnit přes odkaz Nastavení cookies v patičce.",
+    "acceptAllBtn": "Přijmout vše",
+    "acceptNecessaryBtn": "Odmítnout",
+    "showPreferencesBtn": "Nastavení",
+    "preferencesTitle": "Nastavení cookies",
+    "preferencesDescription": "Vyberte, které kategorie cookies nám povolíte. Analytické cookies ukládáme jen s vaším souhlasem.",
+    "savePreferencesBtn": "Uložit nastavení",
+    "closeIconLabel": "Zavřít",
+    "necessaryTitle": "Nezbytné",
+    "necessaryDescription": "Potřebné pro fungování webu, například pro zapamatování vaší volby ohledně cookies. Nelze je vypnout.",
+    "analyticsTitle": "Analytické",
+    "analyticsDescription": "Google Analytics 4 – souhrnné statistiky návštěvnosti, které nám pomáhají web zlepšovat."
+  },
+  "cookies_en": {
+    "footerLink": "Cookie settings",
+    "policyUrl": "",
+    "policyLinkLabel": "Cookie policy",
+    "title": "We use cookies",
+    "description": "Necessary cookies keep the website running. With your consent we also use analytics cookies (Google Analytics) to understand how the website is used and to improve it. You can change your choice at any time via the Cookie settings link in the footer.",
+    "acceptAllBtn": "Accept all",
+    "acceptNecessaryBtn": "Reject",
+    "showPreferencesBtn": "Settings",
+    "preferencesTitle": "Cookie settings",
+    "preferencesDescription": "Choose which categories of cookies you allow. Analytics cookies are only stored with your consent.",
+    "savePreferencesBtn": "Save settings",
+    "closeIconLabel": "Close",
+    "necessaryTitle": "Necessary",
+    "necessaryDescription": "Required for the website to work, for example to remember your cookie choice. They cannot be switched off.",
+    "analyticsTitle": "Analytics",
+    "analyticsDescription": "Google Analytics 4 – aggregated traffic statistics that help us improve the website."
   }
 }

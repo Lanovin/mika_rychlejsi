@@ -2,6 +2,7 @@
 
 import { useLanguage } from "@/src/lib/LanguageContext";
 import { t } from "@/src/lib/translations";
+import { showPreferences } from "vanilla-cookieconsent";
 
 interface FooterContent {
   description: string;
@@ -22,12 +23,15 @@ interface FooterClientProps {
   fEn: FooterContent;
   k: KontaktContent;
   kEn: KontaktContent;
+  cookieLink: string;
+  cookieLinkEn: string;
 }
 
-export function FooterClient({ f, fEn, k, kEn }: FooterClientProps) {
+export function FooterClient({ f, fEn, k, kEn, cookieLink, cookieLinkEn }: FooterClientProps) {
   const { lang } = useLanguage();
   const fc = lang === "en" ? fEn : f;
   const kc = lang === "en" ? kEn : k;
+  const cookieLabel = lang === "en" ? cookieLinkEn : cookieLink;
   const partnerHeading = lang === "en" ? "Our partners" : "Naši partneři";
   const partners = [
     { src: '/partners/moneta.png', href: 'https://gemoney.cz/', alt: 'Moneta' },
@@ -110,6 +114,11 @@ export function FooterClient({ f, fEn, k, kEn }: FooterClientProps) {
         <div className="container-page footer-meta-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px', color: 'var(--cream-muted)', flexWrap: 'wrap', gap: '8px' }}>
           <span style={{ textAlign: 'center', flex: '1 1 auto' }}>{fc.copyright}</span>
           <span style={{ textAlign: 'center', flex: '1 1 auto' }}>{fc.tagline}</span>
+          {cookieLabel && (
+            <button type="button" onClick={() => showPreferences()} className="footer-cookie-link">
+              {cookieLabel}
+            </button>
+          )}
         </div>
       </div>
 
@@ -201,6 +210,20 @@ export function FooterClient({ f, fEn, k, kEn }: FooterClientProps) {
           transform: translateY(-2px);
           color: var(--white);
           border-color: var(--gold-light);
+        }
+        .footer-cookie-link {
+          flex: 1 1 auto;
+          background: none;
+          border: 0;
+          padding: 0;
+          font: inherit;
+          color: inherit;
+          text-decoration: underline;
+          text-underline-offset: 3px;
+          cursor: pointer;
+        }
+        .footer-cookie-link:hover {
+          color: var(--gold-light);
         }
         .footer-social-center {
           display: flex;
