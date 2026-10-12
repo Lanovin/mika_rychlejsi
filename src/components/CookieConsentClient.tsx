@@ -95,8 +95,9 @@ export function CookieConsentClient({ cs, en }: { cs: CookieTexts; en: CookieTex
         categories: {
           necessary: { enabled: true, readOnly: true },
           analytics: {
-            // Po odvolání souhlasu smaže cookies, které už GA stihl uložit.
-            autoClear: { cookies: [{ name: /^_ga/ }] },
+            // Po odvolání souhlasu smaže cookies, které už GA stihl uložit
+            // (totéž dělá i updateConsent(false) – pojistka pro .mikaauto.cz).
+            autoClear: { cookies: [{ name: /^_(ga|gid|gat)/ }] },
           },
         },
         language: {
