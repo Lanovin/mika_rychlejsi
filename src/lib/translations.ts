@@ -493,33 +493,6 @@ const translations: Record<string, Record<Lang, string>> = {
   "vform.publishCheckbox": { cs: "Zobrazovat ve veřejné nabídce", en: "Show in public listing" },
   "vform.featuredCheckbox": { cs: "Zvýraznit na domovské stránce", en: "Highlight on home page" },
   "vform.back": { cs: "Zpět do administrace", en: "Back to Administration" },
-
-  // ─── Cookie consent ────────────────────────────────
-  "cookie.title": { cs: "Soubory cookie", en: "Cookies" },
-  "cookie.description": {
-    cs: "Tento web používá soubory cookie pro zajištění správného fungování stránek a pro analýzu návštěvnosti. Můžete si vybrat, které kategorie povolíte.",
-    en: "This website uses cookies to ensure proper functionality and to analyze traffic. You can choose which categories to allow.",
-  },
-  "cookie.showDetails": { cs: "Zobrazit podrobnosti", en: "Show details" },
-  "cookie.hideDetails": { cs: "Skrýt podrobnosti", en: "Hide details" },
-  "cookie.necessary": { cs: "Nezbytné", en: "Necessary" },
-  "cookie.necessaryDesc": {
-    cs: "Tyto cookies jsou nutné pro správné fungování webu. Nelze je vypnout.",
-    en: "These cookies are essential for the website to function properly. They cannot be disabled.",
-  },
-  "cookie.analytics": { cs: "Analytické", en: "Analytics" },
-  "cookie.analyticsDesc": {
-    cs: "Pomáhají nám pochopit, jak návštěvníci používají web, a zlepšovat jeho výkon.",
-    en: "Help us understand how visitors use the site and improve its performance.",
-  },
-  "cookie.marketing": { cs: "Marketingové", en: "Marketing" },
-  "cookie.marketingDesc": {
-    cs: "Používají se k zobrazování relevantních reklam a měření účinnosti kampaní.",
-    en: "Used to display relevant ads and measure campaign effectiveness.",
-  },
-  "cookie.acceptAll": { cs: "Přijmout vše", en: "Accept All" },
-  "cookie.rejectOptional": { cs: "Pouze nezbytné", en: "Necessary Only" },
-  "cookie.savePreferences": { cs: "Uložit nastavení", en: "Save Preferences" },
 };
 
 export function t(key: string, lang: Lang): string {
