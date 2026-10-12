@@ -11,6 +11,7 @@ import {
   quickEquipmentIds,
 } from "@/src/data/vehicle-equipment";
 import { compressImages } from "@/src/lib/image-compress";
+import { trackEvent } from "@/src/lib/analytics";
 
 const OTHER_VALUE = "__other__";
 const MAX_PHOTOS = 20;
@@ -215,6 +216,7 @@ export function VehiclePurchaseForm() {
         throw new Error(data?.error || "Odeslání se nezdařilo");
       }
       setSubmitted(true);
+      trackEvent("generate_lead", { form_name: "vykup" });
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Odeslání se nezdařilo");
     } finally {

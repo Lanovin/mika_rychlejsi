@@ -7,6 +7,7 @@ import { useLanguage } from "@/src/lib/LanguageContext";
 import { t, tReplace } from "@/src/lib/translations";
 import type { Vehicle } from "@/src/lib/vehicle-types";
 import { VehicleImage } from "@/src/components/VehicleImage";
+import { trackEvent } from "@/src/lib/analytics";
 
 export function VehicleDetailClient({ car }: { car: Vehicle }) {
   const { lang } = useLanguage();
@@ -52,6 +53,14 @@ export function VehicleDetailClient({ car }: { car: Vehicle }) {
   // Only render preload images after client mount to avoid hydration mismatch
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
+
+  useEffect(() => {
+    trackEvent("view_item", {
+      currency: "CZK",
+      value: car.price,
+      items: [{ item_id: car.id, item_name: car.title, item_brand: car.make, price: car.price }],
+    });
+  }, [car.id, car.title, car.make, car.price]);
 
   // Spodní lišta s cenou a CTA je fixní přes celou šířku. Hlásíme její výšku
   // do body, aby se nad ni odsunula plovoucí tlačítka WhatsApp a Instagram
@@ -206,6 +215,7 @@ export function VehicleDetailClient({ car }: { car: Vehicle }) {
       });
       if (res.ok) {
         setInquirySent(true);
+        trackEvent("generate_lead", { form_name: "poptavka", item_id: car.id });
       } else {
         const data = await res.json().catch(() => null);
         setInquiryError(data?.error || (lang === "cs" ? "Nastala chyba při odesílání." : "An error occurred."));

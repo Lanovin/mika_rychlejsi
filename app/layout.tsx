@@ -187,6 +187,7 @@ export default function RootLayout({
 })();`,
           }}
         />
+        <GoogleAnalytics />
       </head>
       <body style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
         <VehicleCardIconSprite />
@@ -199,7 +200,6 @@ export default function RootLayout({
           <InstagramFloatingButton />
           <CookieConsent />
         </LanguageProvider>
-        <GoogleAnalytics />
       </body>
     </html>
   );

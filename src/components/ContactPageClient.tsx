@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 import { useLanguage } from "@/src/lib/LanguageContext";
 import { t } from "@/src/lib/translations";
+import { trackEvent } from "@/src/lib/analytics";
 
 const CONTACT_FORM_ID = "kontaktni-formular";
 
@@ -105,6 +106,7 @@ export function ContactPageClient({
       });
       if (res.ok) {
         setSent(true);
+        trackEvent("generate_lead", { form_name: "contact" });
       } else {
         const body = await res.json().catch(() => null);
         if (body?.code === "CONTACT_DELIVERY_NOT_CONFIGURED") {
