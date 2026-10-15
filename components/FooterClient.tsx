@@ -33,6 +33,7 @@ export function FooterClient({ f, fEn, k, kEn, cookieLink, cookieLinkEn }: Foote
   const kc = lang === "en" ? kEn : k;
   const cookieLabel = lang === "en" ? cookieLinkEn : cookieLink;
   const partnerHeading = lang === "en" ? "Our partners" : "Naši partneři";
+  const creditPrefix = lang === "en" ? "Website by" : "Web od";
   const partners = [
     { src: '/partners/moneta.png', href: 'https://gemoney.cz/', alt: 'Moneta' },
     { src: '/partners/leasingcs-logo.png', href: 'https://leasingcs.cz/', alt: 'Leasing ČS' },
@@ -119,6 +120,12 @@ export function FooterClient({ f, fEn, k, kEn, cookieLink, cookieLinkEn }: Foote
               {cookieLabel}
             </button>
           )}
+          <span style={{ textAlign: 'center', flex: '1 1 auto' }}>
+            {creditPrefix}{" "}
+            <a href="https://lanodigital.cz" target="_blank" rel="noopener noreferrer" className="footer-credit-link">
+              lanodigital
+            </a>
+          </span>
         </div>
       </div>
 
@@ -222,8 +229,14 @@ export function FooterClient({ f, fEn, k, kEn, cookieLink, cookieLinkEn }: Foote
           text-underline-offset: 3px;
           cursor: pointer;
         }
-        .footer-cookie-link:hover {
+        .footer-cookie-link:hover,
+        .footer-credit-link:hover {
           color: var(--gold-light);
+        }
+        .footer-credit-link {
+          color: inherit;
+          text-decoration: underline;
+          text-underline-offset: 3px;
         }
         .footer-social-center {
           display: flex;
